@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ねこと</title>
+    <style>
+      :root {
+        --bg: #fdf6ec;
+        --panel: #ffffff;
+        --ink: #4a3426;
+        --accent: #f0a050;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "BIZ UDPGothic", "Yu Gothic UI", "Hiragino Sans", sans-serif;
+        overflow: hidden;
+      }
+      #app {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      /* 上：ゲーム。横に広く、比は文で決めた画面の大きさ（はじめ 800×450）。 */
+      #stage {
+        position: relative;
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: center;
+        background: #000;
+      }
+      #game {
+        display: block;
+        width: min(100vw, calc(62vh * 16 / 9));
+        aspect-ratio: 16 / 9;
+        image-rendering: auto;
+      }
+      #start {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.45);
+        color: #fff;
+        font-size: 28px;
+        border: none;
+        cursor: pointer;
+      }
+      #start[hidden] {
+        display: none;
+      }
+      /* 下：文。 */
+      #code {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        background: var(--panel);
+        border-top: 3px solid var(--accent);
+        padding: 12px 16px;
+        font-family: "BIZ UDGothic", "MS Gothic", monospace;
+        font-size: 16px;
+        white-space: pre;
+      }
+      #message {
+        color: #c0392b;
+        white-space: pre-wrap;
+        padding: 4px 16px;
+      }
+      #message[hidden] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="stage">
+        <canvas id="game" width="800" height="450"></canvas>
+        <button id="start" type="button">クリックで はじめる</button>
+      </div>
+      <div id="message" hidden></div>
+      <div id="code"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
