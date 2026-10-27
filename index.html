@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ねこと</title>
+    <style>*{box-sizing:border-box}html,body{background:var(--ui-ground);height:100%;color:var(--ui-text);margin:0;font-family:BIZ UDPGothic,Yu Gothic UI,Hiragino Sans,sans-serif;font-size:14px;overflow:hidden}#app{flex-direction:column;height:100%;display:flex}button{font:inherit;color:inherit}#stage{background:#000;flex:none;justify-content:center;display:flex;position:relative}#game{height:55vh;display:block}body.menu #game{height:100vh}body.menu #editor-pane{display:none}#game:focus{outline:none}#start{color:#fff;cursor:pointer;background:#00000080;border:none;justify-content:center;align-items:center;font-size:26px;display:flex;position:absolute;inset:0}#start[hidden],#cleared[hidden],#problems[hidden]{display:none}#cleared{background:var(--ui-raised);border:1px solid var(--ui-highlight);color:var(--ui-highlight);border-radius:10px;align-items:center;gap:14px;padding:10px 14px 10px 20px;font-size:20px;font-weight:700;display:flex;position:absolute;bottom:10%;left:50%;transform:translate(-50%);box-shadow:0 6px 24px #0006}#editor-pane{background:var(--ui-panel);border-top:1px solid var(--ui-border);flex-direction:column;flex:auto;min-height:0;display:flex}#tabs{background:var(--ui-panel-2);border-bottom:1px solid var(--ui-border);flex:none;align-items:stretch;height:36px;display:flex}.tab{background:var(--editor-background);border-top:2px solid var(--ui-highlight);border-right:1px solid var(--ui-border);color:var(--ui-text);align-items:center;gap:8px;padding:0 16px;display:flex}.tab .dot{background:var(--ui-highlight);visibility:hidden;border-radius:50%;width:8px;height:8px}.tab.changed .dot{visibility:visible}#tabs .spacer{flex:1}.tool{border:none;border-left:1px solid var(--ui-border);color:var(--ui-text-muted);cursor:pointer;background:0 0;align-items:center;gap:6px;padding:0 14px;display:flex}.tool:hover{background:var(--ui-hover);color:var(--ui-text)}.tool:disabled{opacity:.4;cursor:default}#code{flex:auto;min-height:0;overflow:hidden}#hint-panel{background:color-mix(in srgb, var(--ui-highlight) 14%, var(--ui-panel));border-bottom:1px solid var(--ui-border);flex:none;align-items:flex-start;gap:12px;padding:8px 12px 8px 16px;display:flex}#hint-panel[hidden],.tool[hidden]{display:none}#hint-list{flex:1;margin:0;padding-left:1.6em;line-height:1.7}#hint-list li::marker{content:"💡 "}.hint-buttons{gap:4px;display:flex}.hint-buttons .tool{border:1px solid var(--ui-border);border-radius:6px;padding:4px 10px}#problems{background:var(--ui-panel-2);border-top:1px solid var(--ui-border);flex:none;max-height:30%;margin:0;padding:6px 0;list-style:none;overflow:auto}#problems li{color:var(--ui-text);cursor:pointer;padding:3px 16px}#problems li:hover{background:var(--ui-hover)}#problems li:before{content:"✖";color:var(--ui-error);margin-right:8px}#problems .line{color:var(--ui-text-faint);margin-left:8px}#status{background:var(--ui-accent);color:#fff;flex:none;align-items:center;gap:18px;height:24px;padding:0 12px;font-size:12.5px;display:flex}#settings{z-index:10;background:#0000008c;justify-content:center;align-items:center;display:flex;position:fixed;inset:0}#settings[hidden]{display:none}#settings .dialog{background:var(--ui-panel);border:1px solid var(--ui-border-strong);border-radius:12px;flex-direction:column;width:min(720px,92vw);height:min(520px,86vh);display:flex;overflow:hidden;box-shadow:0 12px 40px #00000080}#settings header{background:var(--ui-panel-2);border-bottom:1px solid var(--ui-border);align-items:center;gap:8px;height:44px;padding:0 8px 0 18px;font-size:16px;font-weight:700;display:flex}#settings header .spacer{flex:1}#tutorial{z-index:20;background:#0009;justify-content:center;align-items:center;display:flex;position:fixed;inset:0}#tutorial[hidden],#tutorial .page[hidden]{display:none}.tutorial-card{background:var(--ui-panel);border:1px solid var(--ui-border-strong);border-radius:14px;flex-direction:column;width:min(640px,92vw);min-height:360px;padding:22px 26px 14px;font-size:16px;line-height:1.8;display:flex;box-shadow:0 12px 40px #00000080}.tutorial-card h2{color:var(--ui-highlight);margin:0 0 10px;font-size:22px}.tutorial-card .page{flex:1}.tutorial-card ul{margin:0;padding-left:1.2em}.tutorial-card kbd{border:1px solid var(--ui-border-strong);background:var(--ui-raised);border-bottom-width:3px;border-radius:5px;padding:0 6px;font-family:inherit;font-size:.9em}.tutorial-card .pen{color:var(--ui-highlight);font-weight:700}.tutorial-card .lock{background:var(--ui-hover);border:1px solid var(--ui-border);border-radius:999px;padding:0 8px;font-size:.9em}.tutorial-card .example{background:var(--editor-background);border-radius:8px;margin:0 0 10px;padding:10px 14px;font-family:BIZ UDGothic,MS Gothic,monospace;font-size:18px}.r-object{color:var(--role-object)}.r-amount{color:var(--role-amount)}.r-action{color:var(--role-action)}.tutorial-card footer{color:var(--ui-text-muted);align-items:center;gap:8px;margin-top:14px;display:flex}.tutorial-card footer .spacer{flex:1}.tutorial-card footer .tool{border:1px solid var(--ui-border-strong);border-radius:8px;padding:6px 14px}#save-note{color:var(--ui-text-muted);margin-right:6px;font-size:13px;font-weight:400}#settings-code{flex:auto;min-height:0;overflow:hidden}#settings-problems{color:var(--ui-error);background:var(--ui-panel-2);border-top:1px solid var(--ui-border);margin:0;padding:6px 18px;list-style:none}#settings-problems[hidden]{display:none}#status .spacer{flex:1}#status-problems.bad{color:#ffd2d2}</style>
+    <script type="module" crossorigin src="./assets/index-C8rcf-6R.js"></script>
+  </head>
+  <body class="menu">
+    <div id="app">
+      <div id="stage">
+        <canvas id="game" width="800" height="450" tabindex="0"></canvas>
+        <button id="start" type="button">クリックで はじめる</button>
+        <div id="cleared" hidden>
+          <span>🐾 クリア！</span>
+          <button id="next" class="tool" type="button">つぎのステージへ ▶</button>
+        </div>
+      </div>
+      <div id="editor-pane">
+        <div id="tabs">
+          <div class="tab" id="tab"><span id="file-name"></span><span class="dot" title="書き換えている"></span></div>
+          <div class="spacer"></div>
+          <button id="open-tutorial" class="tool" type="button" title="遊び方と、文の決まりを見る">？ あそびかた</button>
+          <button id="hint" class="tool" type="button" title="押すたびに、ヒントが1つずつ増える">💡 ヒント</button>
+          <button id="open-settings" class="tool" type="button" title="音の大きさやテーマを変える">⚙ せってい</button>
+          <button id="menu" class="tool" type="button" title="タイトルとステージ選択に戻る">≡ メニュー</button>
+          <button id="reset" class="tool" type="button" title="このステージの文を、はじめの形に戻す">↺ もとに戻す</button>
+        </div>
+        <div id="hint-panel" hidden>
+          <ol id="hint-list"></ol>
+          <div class="hint-buttons">
+            <button id="hint-more" class="tool" type="button">つぎのヒント</button>
+            <button id="hint-close" class="tool" type="button">とじる</button>
+          </div>
+        </div>
+        <div id="code"></div>
+        <ul id="problems" hidden></ul>
+        <div id="status">
+          <span id="status-problems">✔ 問題なし</span>
+          <span id="status-stage"></span>
+          <span>✏ オレンジの線の行を書き換えられる</span>
+          <span>Esc でゲームにもどる</span>
+          <span class="spacer"></span>
+          <span>をこと</span>
+        </div>
+      </div>
+    </div>
+    <div id="tutorial" hidden>
+      <div class="tutorial-card">
+        <section class="page">
+          <h2>🐾 ねこと へ ようこそ</h2>
+          <p>下に並んでいる文は、このゲームの<b>ルールそのもの</b>です。「をこと」という、日本語で書く言葉で書かれています。</p>
+          <p>文を書き換えると、すぐにゲームが変わります。文を書き換えて、ねこを<b>旗</b>まで連れていこう。</p>
+        </section>
+        <section class="page">
+          <h2>🎮 遊び方</h2>
+          <ul>
+            <li><kbd>←</kbd> <kbd>→</kbd> で歩く。<kbd>スペース</kbd> でジャンプ。</li>
+            <li>下の文をクリックすると、文を書ける。</li>
+            <li>書き終わったら <kbd>Esc</kbd> で、ゲームの操作にもどる（上の画面をクリックしてもよい）。</li>
+            <li>書き換えて少し手を止めると、ゲームがはじめから始まる。</li>
+          </ul>
+        </section>
+        <section class="page">
+          <h2>✏ 書き換えられる行</h2>
+          <ul>
+            <li>左に <span class="pen">✏</span> があって、<span class="pen">オレンジの線</span>の行だけ書き換えられる。</li>
+            <li>ほかの行は読むだけ。「<span class="lock">🔒 12行</span>」の札は、押すと中が開く。</li>
+            <li>いちばん下の「自由に書けるところ」には、新しい文を書き足せる。</li>
+            <li>答えは1つじゃない。思いついた書き方で、旗まで行けたら勝ち。</li>
+          </ul>
+        </section>
+        <section class="page">
+          <h2>📝 文の決まり</h2>
+          <pre class="example"><span class="r-object">ねこ</span> を <span class="r-amount">200</span> だけ <span class="r-action">ジャンプ させる</span>。</pre>
+          <ul>
+            <li>言葉と言葉の間は、<b>空白（スペース）</b>で区切る。「ねこを200だけ」のようにくっつけると読めない。</li>
+            <li>文の終わりには「<b>。</b>」を付ける。</li>
+            <li>「を」「に」「だけ」などの<b>助詞</b>が、その言葉の役割を決める。色は役割の色（する物・数・動き など）。</li>
+            <li>「：」で終わる行の次の行は、<kbd>Tab</kbd> で字下げすると、ひとまとまりになる。</li>
+          </ul>
+        </section>
+        <section class="page">
+          <h2>💡 困ったら</h2>
+          <ul>
+            <li>上の「<b>💡 ヒント</b>」を押すと、ヒントが1つずつ出る。</li>
+            <li>書き間違えると、下に<b>赤い問題</b>が出る（ゲームは前のまま動く）。押すと、その行へ行ける。</li>
+            <li>わからなくなったら「<b>↺ もとに戻す</b>」で、はじめの文に戻せる。</li>
+            <li>この説明は、上の「<b>？ あそびかた</b>」でいつでも見られる。</li>
+          </ul>
+        </section>
+        <footer>
+          <span id="tutorial-page"></span>
+          <span class="spacer"></span>
+          <button id="tutorial-back" class="tool" type="button">◀ もどる</button>
+          <button id="tutorial-next" class="tool" type="button">つぎへ ▶</button>
+        </footer>
+      </div>
+    </div>
+    <div id="settings" hidden>
+      <div class="dialog">
+        <header>
+          <span>⚙ せってい</span>
+          <span class="spacer"></span>
+          <span id="save-note"></span>
+          <button id="save-now" class="tool" type="button" title="今の進みと、書き換えた文と、設定を残す（ふだんも自動で残している）">💾 セーブ</button>
+          <button id="unlock-all" class="tool" type="button" title="前のステージをクリアしていなくても、どのステージでも遊べるようにする">🔓 全部ひらく</button>
+          <button id="erase-save" class="tool" type="button" title="残した進み・書き換えた文・設定を、全部消してはじめに戻す">セーブを消す</button>
+          <button id="close-settings" class="tool" type="button">◀ もどる</button>
+        </header>
+        <div id="settings-code"></div>
+        <ul id="settings-problems" hidden></ul>
+      </div>
+    </div>
+  </body>
+</html>
