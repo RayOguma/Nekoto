@@ -1,8 +1,8 @@
 // 下の文を書く部分（CodeMirror 6）。
 // 変えられるところ（regions.ts）の中だけ打てて、ほかの行は読めるけれど変えられない。色分けは をこと の colorRanges。
 
-import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
-import { EditorState, type Range, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { EditorSelection, EditorState, Prec, type Range, RangeSetBuilder, StateEffect, type StateCommand, StateField } from "@codemirror/state";
 import {
   Decoration,
   type DecorationSet,
@@ -15,12 +15,20 @@ import {
   keymap,
   lineNumbers,
 } from "@codemirror/view";
-import { codeFolding, foldEffect, foldGutter, foldService } from "@codemirror/language";
+import { codeFolding, foldEffect, foldGutter, foldService, indentUnit } from "@codemirror/language";
 import { colorRanges } from "wokoto";
+import { insertNewline, insertTab, removeTab, toggleComment } from "./editing";
 import { CLOSE_MARK, findRegions, findValues, insideRegion, lockedSections, OPEN_MARK } from "./regions";
 
+// 印の行（# ▼ 変えられる、# ▲ ここまで）の数。
+function markCount(text: string): number {
+  return text.split("\n").filter((line) => line.trim() === OPEN_MARK || line.trim() === CLOSE_MARK).length;
+}
+
 // 変えられるところの外を書き換えようとしたら、取り消す。
-const lockFilter = EditorState.transactionFilter.of((tr) => {
+// 変えられるところの中でも、印の行を書き足したり消したりする書き換えは取り消す
+// （印を打つと範囲が変わり、自分で書いた行に鍵がかかって、元に戻せなくなるため）。
+export const lockFilter = EditorState.transactionFilter.of((tr) => {
   if (!tr.docChanged) {
     return tr;
   }
@@ -31,6 +39,9 @@ const lockFilter = EditorState.transactionFilter.of((tr) => {
       ok = false;
     }
   });
+  if (ok && markCount(tr.newDoc.toString()) !== markCount(tr.startState.doc.toString())) {
+    ok = false;
+  }
   return ok ? tr : [];
 });
 
@@ -202,7 +213,7 @@ const foldMarks = foldGutter({
 
 type Span = { from: number; to: number };
 
-const valueSpans = StateField.define<Span[]>({
+export const valueSpans = StateField.define<Span[]>({
   create: (state) => findValues(state.doc.toString()),
   update(spans, tr) {
     if (!tr.docChanged) {
@@ -213,15 +224,15 @@ const valueSpans = StateField.define<Span[]>({
   },
 });
 
-const valueFilter = EditorState.transactionFilter.of((tr) => {
+export const valueFilter = EditorState.transactionFilter.of((tr) => {
   if (!tr.docChanged) {
     return tr;
   }
   const spans = tr.startState.field(valueSpans);
   let ok = true;
   tr.changes.iterChanges((fromA, toA, _fromB, _toB, inserted) => {
-    // 値の中だけ。改行は入れられない（1行に1つの決まりが崩れるので）。
-    if (!spans.some((span) => span.from <= fromA && toA <= span.to) || inserted.toString().includes("\n")) {
+    // 値の中だけ。改行とタブは入れられない（1行に1つの決まりが崩れる・値が読めなくなるので）。
+    if (!spans.some((span) => span.from <= fromA && toA <= span.to) || /[\n\t]/.test(inserted.toString())) {
       ok = false;
     }
   });
@@ -244,6 +255,42 @@ const valueTheme = EditorView.theme({
   },
 });
 
+// 設定の画面の Tab：次の値の枠へ（Shift+Tab で前の枠へ）。最後の次は最初に戻る。値の中は全部選ぶ（打つと置き換わる）。
+export function moveToValue(forward: boolean): StateCommand {
+  return ({ state, dispatch }) => {
+    const spans = state.field(valueSpans, false) ?? [];
+    if (spans.length === 0) {
+      return true;
+    }
+    const head = state.selection.main.head;
+    const before = spans.filter((span) => span.to < head).length - 1;
+    const index = forward ? spans.findIndex((span) => span.from > head) : before;
+    const target = index === -1 ? spans[forward ? 0 : spans.length - 1] : spans[index];
+    dispatch(state.update({ selection: EditorSelection.range(target.from, target.to), scrollIntoView: true }));
+    return true;
+  };
+}
+
+// ステージの文のキー（editing.ts）。決まったキーより先に受け取る。
+const stageKeys = Prec.highest(
+  keymap.of([
+    { key: "Enter", run: insertNewline },
+    { key: "Tab", run: insertTab, shift: removeTab },
+    { key: "Mod-/", run: toggleComment },
+  ]),
+);
+
+// 設定の文のキー。Tab で値の枠を移る。Enter は何もしない（改行は入れられない）。
+const settingsKeys = Prec.highest(
+  keymap.of([
+    { key: "Tab", run: moveToValue(true), shift: moveToValue(false) },
+    { key: "Enter", run: () => true },
+  ]),
+);
+
+// タブの見た目の幅（全角2文字ぶん。つなぎと同じ）。
+const tabWidth = EditorView.contentAttributes.of({ style: "tab-size: 2em" });
+
 // 文を書く部分の種類。ステージ（印で囲んだ行を変えられる）か、設定（値だけ変えられる）。
 export type LockMode = "ステージ" | "設定";
 
@@ -260,7 +307,9 @@ export type CodeEditor = {
 // onChange は、遊ぶ人が文を書き換えたときに呼ぶ。
 export function createCodeEditor(parent: HTMLElement, onChange: () => void, mode: LockMode = "ステージ"): CodeEditor {
   const locks =
-    mode === "ステージ" ? [foldMarks, penGutter, sectionFolds, folding, lockFilter, lineField] : [valueSpans, valueFilter, valueMarks, valueTheme];
+    mode === "ステージ"
+      ? [foldMarks, penGutter, sectionFolds, folding, lockFilter, lineField, stageKeys]
+      : [valueSpans, valueFilter, valueMarks, valueTheme, settingsKeys];
   const extensions = [
     lineNumbers(),
     ...locks,
@@ -268,7 +317,11 @@ export function createCodeEditor(parent: HTMLElement, onChange: () => void, mode
     highlightActiveLineGutter(),
     drawSelection(),
     history(),
-    keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
+    // をこと の字下げはタブ。決まったキーの「字下げ」もタブで入れる。
+    indentUnit.of("\t"),
+    EditorState.tabSize.of(4),
+    tabWidth,
+    keymap.of([...defaultKeymap, ...historyKeymap]),
     colorField,
     theme,
     EditorView.updateListener.of((update) => {

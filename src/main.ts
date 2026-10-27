@@ -514,6 +514,12 @@ window.addEventListener("keydown", (event) => {
     canvas.focus();
     return;
   }
+  // 設定の画面は、Esc で閉じる（変換中を除く）。
+  if (event.key === "Escape" && !event.isComposing && settingsOpen) {
+    event.preventDefault();
+    closeSettings();
+    return;
+  }
   if (typingInCode(event)) {
     return;
   }
@@ -533,6 +539,17 @@ window.addEventListener("keyup", (event) => {
 window.addEventListener("blur", () => held.clear());
 // 文を打ち始めたら、押しっぱなしのキーを放したことにする。
 document.querySelector("#code")!.addEventListener("focusin", () => held.clear());
+// 上の帯とヒントのボタンは、押したらフォーカスを外して、ゲームの操作に戻す。
+// フォーカスが残ると、次にスペースでジャンプしたときに、そのボタン（もとに戻す など）がもう一度押されてしまうため。
+for (const bar of document.querySelectorAll("#tabs, #hint-panel, #cleared")) {
+  bar.addEventListener("click", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("button") : null;
+    if (button && document.activeElement === button) {
+      button.blur();
+      canvas.focus();
+    }
+  });
+}
 // ゲームの画面をクリックしたら、文から離れてゲームを操作する。
 canvas.addEventListener("pointerdown", () => {
   (document.activeElement as HTMLElement | null)?.blur();
