@@ -130,3 +130,12 @@ test("メニュー：字の部品（副題・札の名前）が真ん中にそ�
   const names = game.things.filter((thing) => thing.kinds.includes("札名"));
   names.forEach((name, i) => expect(Math.abs(center(name) - center(cards[i]))).toBeLessThan(1));
 });
+
+test("メニュー：右下に音楽のクレジットが出る", () => {
+  const game = gameOf(menu);
+  step(game, { keys: [] });
+  const credit = game.things.find((thing) => thing.kinds.includes("クレジット"))!;
+  expect(credit.label).toContain("音楽：もみじばミュージック");
+  expect(credit.label).toContain("音楽：魔王魂");
+  expect(credit.x + credit.width).toBeLessThanOrEqual(800);
+});
