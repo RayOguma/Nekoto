@@ -45,7 +45,7 @@ const MICE: [string, string] = ["ねこ が ねずみ に 触れたら、ねこ 
 const RIGHT: [string, string] = ["右キー を 押している なら、ねこ を 左 に", "右キー を 押している なら、ねこ を 右 に"];
 
 // ステージごとの、答えの一例（書き換える前と後の組を、いくつか）と、自動で遊ぶ係の決まり。
-const answers: Record<string, { changes: [string, string][]; bot?: Bot }> = {
+const answers: Record<string, { changes: [string, string][]; bot?: Bot; timeout?: number }> = {
   "01_ジャンプ.wokoto": { changes: [["50 だけ", "200 だけ"]] },
   "02_向き.wokoto": { changes: [RIGHT] },
   "03_速さ.wokoto": { changes: [["右 に 2 だけ", "右 に 6 だけ"]], bot: { jumps: [[800, 820]], quiet: [[500, 799]] } },
@@ -64,6 +64,36 @@ const answers: Record<string, { changes: [string, string][]; bot?: Bot }> = {
       ["に 2 だけ 動かす。\n\t左キー", "に 6 だけ 動かす。\n\t左キー"],
     ],
     bot: { jumps: [[1520, 1540]], quiet: [[1250, 1519]] },
+  },
+  // ---- むずかしいステージ ----
+  "11_トゲの天井.wokoto": {
+    changes: [["400 だけ", "200 だけ"], ["右 に 2 だけ", "右 に 6 だけ"]],
+    bot: { jumps: [[800, 820]], quiet: [[500, 799]] },
+  },
+  "12_せまいトンネル.wokoto": { changes: [["ねこ の 高さ を 56", "ねこ の 高さ を 40"], MICE] },
+  "13_スイッチの橋.wokoto": {
+    changes: [["橋 を 横 100", "橋 を 横 880"], ["縦 380 から 出す", "縦 40 から 出す"]],
+    bot: { quiet: [[600, 720]] },
+  },
+  "14_エレベーター.wokoto": {
+    changes: [["上の止まり を 150", "上の止まり を 280"], ["触れたら、動く を 偽", "触れたら、動く を 真"]],
+    bot: { quiet: [[1000, 2400]] },
+  },
+  // 地面の魚を跳び越えないように、魚の近くでは跳ばない。
+  "15_魚あつめ.wokoto": { changes: [["必要 を 3", "必要 を 2"], ["集めた + 0", "集めた + 1"]], bot: { quiet: [[260, 640], [760, 1140]] } },
+  "16_向かい風.wokoto": { changes: [["左 に 6 だけ", "左 に 1 だけ"], MICE] },
+  "17_落ちてくる岩.wokoto": {
+    changes: [
+      ["ねこ が 岩 に 触れたら、ねこ を 横 80 縦 80 に 動かす。", "ねこ が 岩 に 触れたら、その 岩 を 消す。"],
+      ["右 に 2 だけ", "右 に 6 だけ"],
+    ],
+    bot: { jumps: [[1360, 1380]], quiet: [[1050, 1359]] },
+  },
+  "18_見えない床.wokoto": { changes: [addLine("ねこ は 見えない床 に 乗る。"), MICE] },
+  "19_さかさま.wokoto": { changes: [["-1500 だけ", "1500 だけ"], ["5秒 ごと", "20秒 ごと"]] },
+  "20_総まとめ2.wokoto": {
+    timeout: 60000,
+    changes: [["400 だけ", "200 だけ"], ["ねこ の 高さ を 56", "ねこ の 高さ を 40"], MICE, ["5秒 ごと", "20秒 ごと"]],
   },
 };
 
@@ -85,6 +115,15 @@ for (const stage of STAGES) {
         expect(cleared(apply(stage.text, partial), answer.bot), `${skip + 1}つ目を書き換えないと`).toBe(false);
       });
     }
+  }, answers[stage.file]?.timeout ?? 20000);
+}
+
+// むずかしいステージ（11〜）は、ジャンプを高く・回数を多くするだけ（力押し）ではクリアできない。
+for (const stage of STAGES.slice(10)) {
+  test(`力押しだけではクリアできない：${stage.file}`, () => {
+    const brute = stage.text.replace(/ねこ を \d+ だけ \d+回 まで ジャンプ させる。/, "ねこ を 1000 だけ 99回 まで ジャンプ させる。");
+    expect(brute).not.toBe(stage.text);
+    expect(cleared(brute)).toBe(false);
   });
 }
 
