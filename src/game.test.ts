@@ -54,19 +54,25 @@ for (const stage of STAGES) {
   });
 }
 
-test("メニュー：はじめるを押すと「遊ぶ」が「つづき」に、ステージを選ぶとその行になる", () => {
+test("メニュー：はじめるを押すと「遊ぶ」が 0（つづき）に、ステージの札を押すとその番号になる", () => {
   const game = gameOf(menu);
-  game.variables.set("ステージ一覧", ["1. ジャンプ", "2. 向き"]);
+  game.variables.set("ステージ名", ["ジャンプ", "向き", "速さ"]);
+  game.variables.set("クリアした", [true, false, false]);
   step(game, { keys: [] });
-  // はじめる は 横 100 縦 190（下から）、幅 260 高さ 52。クリックの位置は上から数える。
-  step(game, { keys: [], clicks: [{ x: 230, y: 450 - 190 - 26 }] });
-  expect(game.variables.get("遊ぶ")).toBe("つづき");
+  // 画面の幅 800 なので真ん中は 400。はじめボタン は 横 250 縦 160（下から）、幅 300 高さ 60。クリックの位置は上から数える。
+  step(game, { keys: [], clicks: [{ x: 400, y: 450 - 160 - 30 }] });
+  expect(game.variables.get("遊ぶ")).toBe(0);
   game.variables.set("遊ぶ", null);
-  // えらぶ（縦 125）を押して、ステージ選択へ。一覧は 横 50 縦 150、高さ 210。1行目を押す。
-  step(game, { keys: [], clicks: [{ x: 230, y: 450 - 125 - 26 }] });
+  // えらぶボタン（縦 90）を押して、ステージ選択へ。
+  step(game, { keys: [], clicks: [{ x: 400, y: 450 - 90 - 30 }] });
   step(game, { keys: [] });
-  step(game, { keys: [], clicks: [{ x: 200, y: 450 - 150 - 210 + 20 }] });
-  expect(game.variables.get("遊ぶ")).toBe("1. ジャンプ");
+  // 札は 横 (400 - 335 + 列 * 140) 縦 255、大きさ 110。2枚目を押す。
+  const cards = game.things.filter((thing) => thing.kinds.includes("札"));
+  expect(cards).toHaveLength(3);
+  expect(cards[0].image).toBe("札クリア.png");
+  expect(cards[1].image).toBe("札.png");
+  step(game, { keys: [], clicks: [{ x: 65 + 140 + 55, y: 450 - 255 - 55 }] });
+  expect(game.variables.get("遊ぶ")).toBe(2);
 });
 
 test("設定の文が読める。はじめの音楽の音量は小さい", () => {

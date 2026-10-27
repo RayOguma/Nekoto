@@ -19,7 +19,7 @@ import {
 } from "wokoto";
 import { createCodeEditor } from "./editor";
 import { handleSounds, imageOf, setVolume, stopAllSounds } from "./media";
-import { chosenStage, MENU_TEXT, SETTINGS_TEXT, stageList, STAGES } from "./stages";
+import { chosenStage, MENU_TEXT, SETTINGS_TEXT, STAGES } from "./stages";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
 const start = document.querySelector<HTMLButtonElement>("#start")!;
@@ -213,18 +213,27 @@ function openStage(index: number) {
   build(stage.text);
 }
 
-// メニューを開く。ステージの一覧（クリアの印つき）を、名前「ステージ一覧」に入れて渡す。
+// メニューを開く。ステージの名前と、クリアしたかの並びを、名前「ステージ名」「クリアした」に入れて渡す。
 function openMenu() {
   mode = "メニュー";
   document.body.classList.add("menu");
   build(MENU_TEXT);
-  game?.variables.set("ステージ一覧", stageList(clearedStages));
+  game?.variables.set(
+    "ステージ名",
+    STAGES.map((stage) => stage.title),
+  );
+  game?.variables.set(
+    "クリアした",
+    STAGES.map((_, index) => clearedStages.has(index)),
+  );
 }
 
 // メニューの をこと の文が、名前「遊ぶ」「設定を開く」に入れたものを見て、ステージや設定を開く。
 function watchMenu(state: GameState) {
+  // 見えている横の長さを、名前「画面の幅」で渡す（真ん中にそろえる計算は、をこと の文の中でする）。
+  state.variables.set("画面の幅", state.screen.width);
   const choice = state.variables.get("遊ぶ");
-  if (typeof choice === "string") {
+  if (choice !== null && choice !== undefined) {
     state.variables.set("遊ぶ", null);
     const index = chosenStage(choice, clearedStages);
     if (index !== null) {
