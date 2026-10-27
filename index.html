@@ -151,6 +151,38 @@
         min-height: 0;
         overflow: hidden;
       }
+      /* ヒント（押すたびに1つずつ増える）。 */
+      #hint-panel {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 8px 12px 8px 16px;
+        background: color-mix(in srgb, var(--ui-highlight) 14%, var(--ui-panel));
+        border-bottom: 1px solid var(--ui-border);
+      }
+      #hint-panel[hidden],
+      .tool[hidden] {
+        display: none;
+      }
+      #hint-list {
+        flex: 1;
+        margin: 0;
+        padding-left: 1.6em;
+        line-height: 1.7;
+      }
+      #hint-list li::marker {
+        content: "💡 ";
+      }
+      .hint-buttons {
+        display: flex;
+        gap: 4px;
+      }
+      .hint-buttons .tool {
+        border: 1px solid var(--ui-border);
+        border-radius: 6px;
+        padding: 4px 10px;
+      }
       /* 問題の一覧（間違いがあるときだけ）。 */
       #problems {
         flex: 0 0 auto;
@@ -273,9 +305,17 @@
         <div id="tabs">
           <div class="tab" id="tab"><span id="file-name"></span><span class="dot" title="書き換えている"></span></div>
           <div class="spacer"></div>
+          <button id="hint" class="tool" type="button" title="押すたびに、ヒントが1つずつ増える">💡 ヒント</button>
           <button id="open-settings" class="tool" type="button" title="音の大きさやテーマを変える">⚙ せってい</button>
           <button id="menu" class="tool" type="button" title="タイトルとステージ選択に戻る">≡ メニュー</button>
           <button id="reset" class="tool" type="button" title="このステージの文を、はじめの形に戻す">↺ もとに戻す</button>
+        </div>
+        <div id="hint-panel" hidden>
+          <ol id="hint-list"></ol>
+          <div class="hint-buttons">
+            <button id="hint-more" class="tool" type="button">つぎのヒント</button>
+            <button id="hint-close" class="tool" type="button">とじる</button>
+          </div>
         </div>
         <div id="code"></div>
         <ul id="problems" hidden></ul>
@@ -295,6 +335,7 @@
           <span class="spacer"></span>
           <span id="save-note"></span>
           <button id="save-now" class="tool" type="button" title="今の進みと、書き換えた文と、設定を残す（ふだんも自動で残している）">💾 セーブ</button>
+          <button id="unlock-all" class="tool" type="button" title="前のステージをクリアしていなくても、どのステージでも遊べるようにする">🔓 全部ひらく</button>
           <button id="erase-save" class="tool" type="button" title="残した進み・書き換えた文・設定を、全部消してはじめに戻す">セーブを消す</button>
           <button id="close-settings" class="tool" type="button">◀ もどる</button>
         </header>

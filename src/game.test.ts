@@ -92,6 +92,7 @@ test("メニュー：はじめるを押すと「遊ぶ」が 0（つづき）に
   const game = gameOf(menu);
   game.variables.set("ステージ名", ["ジャンプ", "向き", "速さ"]);
   game.variables.set("クリアした", [true, false, false]);
+  game.variables.set("遊べる", [true, true, false]);
   step(game, { keys: [] });
   // 画面の幅 800 なので真ん中は 400。はじめボタン は 横 250 縦 160（下から）、幅 300 高さ 60。クリックの位置は上から数える。
   step(game, { keys: [], clicks: [{ x: 400, y: 450 - 160 - 30 }] });
@@ -120,6 +121,7 @@ test("メニュー：字の部品（副題・札の名前）が真ん中にそ�
   const game = gameOf(menu);
   game.variables.set("ステージ名", ["ジャンプ", "向き", "速さ"]);
   game.variables.set("クリアした", [false, false, false]);
+  game.variables.set("遊べる", [true, false, false]);
   step(game, { keys: [] });
   const center = (thing: { x: number; width: number }) => thing.x + thing.width / 2;
   const subtitle = game.things.find((thing) => thing.kinds.includes("副題"))!;
@@ -138,4 +140,18 @@ test("メニュー：右下に音楽のクレジットが出る", () => {
   expect(credit.label).toContain("音楽：もみじばミュージック");
   expect(credit.label).toContain("音楽：魔王魂");
   expect(credit.x + credit.width).toBeLessThanOrEqual(800);
+});
+
+test("メニュー：まだ遊べない札には南京錠が出て、押しても -1（何もしない）", () => {
+  const game = gameOf(menu);
+  game.variables.set("ステージ名", ["ジャンプ", "向き", "速さ"]);
+  game.variables.set("クリアした", [true, false, false]);
+  game.variables.set("遊べる", [true, true, false]);
+  step(game, { keys: [] });
+  step(game, { keys: [], clicks: [{ x: 400, y: 450 - 90 - 30 }] });
+  step(game, { keys: [] });
+  expect(game.things.filter((thing) => thing.kinds.includes("錠"))).toHaveLength(1);
+  // 3枚目（横 65 + 280）を押す。
+  step(game, { keys: [], clicks: [{ x: 65 + 280 + 55, y: 450 - 255 - 55 }] });
+  expect(game.variables.get("遊ぶ")).toBe(-1);
 });

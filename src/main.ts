@@ -20,7 +20,7 @@ import {
 import { createCodeEditor } from "./editor";
 import { handleSounds, imageOf, setVolume, stopAllSounds } from "./media";
 import { clearSave, emptySave, loadSave, rememberText, stageText, writeSave } from "./save";
-import { chosenStage, MENU_TEXT, SETTINGS_TEXT, STAGES } from "./stages";
+import { chosenStage, MENU_TEXT, playable, SETTINGS_TEXT, STAGES } from "./stages";
 
 // ---- セーブ ----
 // 進み・ステージごとに書き換えた文・設定の文を、このブラウザ（localStorage）に自動で残す。設定の画面からも残せて、消せる。
@@ -145,6 +145,22 @@ document.querySelector("#save-now")!.addEventListener("click", () => {
   note(persist() ? "セーブしました" : "セーブできませんでした（このブラウザでは残せません）");
 });
 
+// 全部ひらく：前のステージをクリアしていなくても、どのステージでも遊べるようにする（発表のときなど）。もう一度押すと戻す。
+const unlockButton = document.querySelector<HTMLButtonElement>("#unlock-all")!;
+function showUnlock() {
+  unlockButton.textContent = save.unlockAll ? "🔒 順番にひらく" : "🔓 全部ひらく";
+}
+showUnlock();
+unlockButton.addEventListener("click", () => {
+  save.unlockAll = !save.unlockAll;
+  persist();
+  showUnlock();
+  note(save.unlockAll ? "全部のステージを遊べるようにしました" : "前のステージをクリアするまで、選べないようにしました");
+  if (mode === "メニュー") {
+    openMenu();
+  }
+});
+
 document.querySelector("#erase-save")!.addEventListener("click", () => {
   if (!window.confirm("クリアした記録・書き換えた文・設定を、全部消してはじめに戻しますか？（元に戻せません）")) {
     return;
@@ -154,6 +170,7 @@ document.querySelector("#erase-save")!.addEventListener("click", () => {
   }
   Object.assign(save, emptySave());
   clearedStages.clear();
+  showUnlock();
   settingsEditor.load(SETTINGS_TEXT);
   applySettingsText(SETTINGS_TEXT);
   // 開いている画面も、はじめの形にする。
@@ -264,6 +281,10 @@ const editor = createCodeEditor(document.querySelector<HTMLElement>("#code")!, (
 
 // ステージを開く。セーブに書き換えた文があれば、その続きから。
 function openStage(index: number) {
+  if (index !== stageIndex || mode !== "ステージ") {
+    hintsShown = 0;
+    hintPanel.hidden = true;
+  }
   stageIndex = index;
   const stage = STAGES[index];
   const text = stageText(save, stage.file, stage.text);
@@ -290,6 +311,10 @@ function openMenu() {
     "クリアした",
     STAGES.map((_, index) => clearedStages.has(index)),
   );
+  game?.variables.set(
+    "遊べる",
+    STAGES.map((_, index) => playable(index, clearedStages, save.unlockAll)),
+  );
 }
 
 // メニューの をこと の文が、名前「遊ぶ」「設定を開く」に入れたものを見て、ステージや設定を開く。
@@ -299,7 +324,7 @@ function watchMenu(state: GameState) {
   const choice = state.variables.get("遊ぶ");
   if (choice !== null && choice !== undefined) {
     state.variables.set("遊ぶ", null);
-    const index = chosenStage(choice, clearedStages);
+    const index = chosenStage(choice, clearedStages, save.unlockAll);
     if (index !== null) {
       openStage(index);
       canvas.focus();
@@ -310,6 +335,45 @@ function watchMenu(state: GameState) {
     openSettings();
   }
 }
+
+// ---- ヒント ----
+// 「💡 ヒント」を押すたびに、そのステージのヒントを1つずつ増やして見せる（やさしい順）。ステージを開き直すと、はじめから。
+
+const hintPanel = document.querySelector<HTMLElement>("#hint-panel")!;
+const hintList = document.querySelector<HTMLOListElement>("#hint-list")!;
+const hintMore = document.querySelector<HTMLButtonElement>("#hint-more")!;
+let hintsShown = 0;
+
+function showHints() {
+  const hints = STAGES[stageIndex].hints;
+  hintList.replaceChildren(
+    ...hints.slice(0, hintsShown).map((hint) => {
+      const li = document.createElement("li");
+      li.textContent = hint;
+      return li;
+    }),
+  );
+  hintPanel.hidden = hintsShown === 0;
+  hintMore.hidden = hintsShown >= hints.length;
+}
+
+function moreHint() {
+  const hints = STAGES[stageIndex].hints;
+  if (hints.length === 0) {
+    hintList.replaceChildren(Object.assign(document.createElement("li"), { textContent: "このステージには、ヒントがありません。" }));
+    hintPanel.hidden = false;
+    hintMore.hidden = true;
+    return;
+  }
+  hintsShown = Math.min(hintsShown + 1, hints.length);
+  showHints();
+}
+
+document.querySelector("#hint")!.addEventListener("click", moreHint);
+hintMore.addEventListener("click", moreHint);
+document.querySelector("#hint-close")!.addEventListener("click", () => {
+  hintPanel.hidden = true;
+});
 
 // もとに戻す：書き換えた文を消して、はじめの文に戻す（残していた文も消す）。書き換えていたら、先に確かめる。
 resetButton.addEventListener("click", () => {

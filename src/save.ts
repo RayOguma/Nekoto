@@ -13,10 +13,12 @@ export type SaveData = {
   texts: Record<string, SavedText>;
   // 設定の文。null なら、はじめの設定。
   settings: string | null;
+  // 全部のステージを、前をクリアしていなくても遊べるようにしたか（設定の画面の「全部ひらく」）。
+  unlockAll: boolean;
 };
 
 export function emptySave(): SaveData {
-  return { cleared: [], texts: {}, settings: null };
+  return { cleared: [], texts: {}, settings: null, unlockAll: false };
 }
 
 // 読む。なかったり壊れていたりしたら、空のセーブ。
@@ -31,6 +33,7 @@ export function loadSave(storage: Pick<Storage, "getItem">): SaveData {
       cleared: Array.isArray(data.cleared) ? data.cleared.filter((item): item is string => typeof item === "string") : [],
       texts: data.texts && typeof data.texts === "object" ? data.texts : {},
       settings: typeof data.settings === "string" ? data.settings : null,
+      unlockAll: data.unlockAll === true,
     };
   } catch {
     return emptySave();
