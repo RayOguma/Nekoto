@@ -261,6 +261,97 @@
       #settings header .spacer {
         flex: 1;
       }
+      /* あそびかた（チュートリアル）。はじめてステージを開いたときと、「？ あそびかた」で出す。 */
+      #tutorial {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+      }
+      #tutorial[hidden],
+      #tutorial .page[hidden] {
+        display: none;
+      }
+      .tutorial-card {
+        display: flex;
+        flex-direction: column;
+        width: min(640px, 92vw);
+        min-height: 360px;
+        padding: 22px 26px 14px;
+        background: var(--ui-panel);
+        border: 1px solid var(--ui-border-strong);
+        border-radius: 14px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+        font-size: 16px;
+        line-height: 1.8;
+      }
+      .tutorial-card h2 {
+        margin: 0 0 10px;
+        font-size: 22px;
+        color: var(--ui-highlight);
+      }
+      .tutorial-card .page {
+        flex: 1;
+      }
+      .tutorial-card ul {
+        margin: 0;
+        padding-left: 1.2em;
+      }
+      .tutorial-card kbd {
+        padding: 0 6px;
+        border: 1px solid var(--ui-border-strong);
+        border-bottom-width: 3px;
+        border-radius: 5px;
+        background: var(--ui-raised);
+        font-family: inherit;
+        font-size: 0.9em;
+      }
+      .tutorial-card .pen {
+        color: var(--ui-highlight);
+        font-weight: bold;
+      }
+      .tutorial-card .lock {
+        padding: 0 8px;
+        border-radius: 999px;
+        background: var(--ui-hover);
+        border: 1px solid var(--ui-border);
+        font-size: 0.9em;
+      }
+      .tutorial-card .example {
+        margin: 0 0 10px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        background: var(--editor-background);
+        font-family: "BIZ UDGothic", "MS Gothic", monospace;
+        font-size: 18px;
+      }
+      .r-object {
+        color: var(--role-object);
+      }
+      .r-amount {
+        color: var(--role-amount);
+      }
+      .r-action {
+        color: var(--role-action);
+      }
+      .tutorial-card footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 14px;
+        color: var(--ui-text-muted);
+      }
+      .tutorial-card footer .spacer {
+        flex: 1;
+      }
+      .tutorial-card footer .tool {
+        border: 1px solid var(--ui-border-strong);
+        border-radius: 8px;
+        padding: 6px 14px;
+      }
       #save-note {
         color: var(--ui-text-muted);
         font-weight: normal;
@@ -305,6 +396,7 @@
         <div id="tabs">
           <div class="tab" id="tab"><span id="file-name"></span><span class="dot" title="書き換えている"></span></div>
           <div class="spacer"></div>
+          <button id="open-tutorial" class="tool" type="button" title="遊び方と、文の決まりを見る">？ あそびかた</button>
           <button id="hint" class="tool" type="button" title="押すたびに、ヒントが1つずつ増える">💡 ヒント</button>
           <button id="open-settings" class="tool" type="button" title="音の大きさやテーマを変える">⚙ せってい</button>
           <button id="menu" class="tool" type="button" title="タイトルとステージ選択に戻る">≡ メニュー</button>
@@ -323,9 +415,62 @@
           <span id="status-problems">✔ 問題なし</span>
           <span id="status-stage"></span>
           <span>✏ オレンジの線の行を書き換えられる</span>
+          <span>Esc でゲームにもどる</span>
           <span class="spacer"></span>
           <span>をこと</span>
         </div>
+      </div>
+    </div>
+    <div id="tutorial" hidden>
+      <div class="tutorial-card">
+        <section class="page">
+          <h2>🐾 ねこと へ ようこそ</h2>
+          <p>下に並んでいる文は、このゲームの<b>ルールそのもの</b>です。「をこと」という、日本語で書く言葉で書かれています。</p>
+          <p>文を書き換えると、すぐにゲームが変わります。文を書き換えて、ねこを<b>旗</b>まで連れていこう。</p>
+        </section>
+        <section class="page">
+          <h2>🎮 遊び方</h2>
+          <ul>
+            <li><kbd>←</kbd> <kbd>→</kbd> で歩く。<kbd>スペース</kbd> でジャンプ。</li>
+            <li>下の文をクリックすると、文を書ける。</li>
+            <li>書き終わったら <kbd>Esc</kbd> で、ゲームの操作にもどる（上の画面をクリックしてもよい）。</li>
+            <li>書き換えて少し手を止めると、ゲームがはじめから始まる。</li>
+          </ul>
+        </section>
+        <section class="page">
+          <h2>✏ 書き換えられる行</h2>
+          <ul>
+            <li>左に <span class="pen">✏</span> があって、<span class="pen">オレンジの線</span>の行だけ書き換えられる。</li>
+            <li>ほかの行は読むだけ。「<span class="lock">🔒 12行</span>」の札は、押すと中が開く。</li>
+            <li>いちばん下の「自由に書けるところ」には、新しい文を書き足せる。</li>
+            <li>答えは1つじゃない。思いついた書き方で、旗まで行けたら勝ち。</li>
+          </ul>
+        </section>
+        <section class="page">
+          <h2>📝 文の決まり</h2>
+          <pre class="example"><span class="r-object">ねこ</span> を <span class="r-amount">200</span> だけ <span class="r-action">ジャンプ させる</span>。</pre>
+          <ul>
+            <li>言葉と言葉の間は、<b>空白（スペース）</b>で区切る。「ねこを200だけ」のようにくっつけると読めない。</li>
+            <li>文の終わりには「<b>。</b>」を付ける。</li>
+            <li>「を」「に」「だけ」などの<b>助詞</b>が、その言葉の役割を決める。色は役割の色（する物・数・動き など）。</li>
+            <li>「：」で終わる行の次の行は、<kbd>Tab</kbd> で字下げすると、ひとまとまりになる。</li>
+          </ul>
+        </section>
+        <section class="page">
+          <h2>💡 困ったら</h2>
+          <ul>
+            <li>上の「<b>💡 ヒント</b>」を押すと、ヒントが1つずつ出る。</li>
+            <li>書き間違えると、下に<b>赤い問題</b>が出る（ゲームは前のまま動く）。押すと、その行へ行ける。</li>
+            <li>わからなくなったら「<b>↺ もとに戻す</b>」で、はじめの文に戻せる。</li>
+            <li>この説明は、上の「<b>？ あそびかた</b>」でいつでも見られる。</li>
+          </ul>
+        </section>
+        <footer>
+          <span id="tutorial-page"></span>
+          <span class="spacer"></span>
+          <button id="tutorial-back" class="tool" type="button">◀ もどる</button>
+          <button id="tutorial-next" class="tool" type="button">つぎへ ▶</button>
+        </footer>
       </div>
     </div>
     <div id="settings" hidden>

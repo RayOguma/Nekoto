@@ -15,10 +15,12 @@ export type SaveData = {
   settings: string | null;
   // 全部のステージを、前をクリアしていなくても遊べるようにしたか（設定の画面の「全部ひらく」）。
   unlockAll: boolean;
+  // あそびかた（チュートリアル）を見たか。見ていなければ、はじめてステージを開いたときに出す。
+  tutorialSeen: boolean;
 };
 
 export function emptySave(): SaveData {
-  return { cleared: [], texts: {}, settings: null, unlockAll: false };
+  return { cleared: [], texts: {}, settings: null, unlockAll: false, tutorialSeen: false };
 }
 
 // 読む。なかったり壊れていたりしたら、空のセーブ。
@@ -34,6 +36,7 @@ export function loadSave(storage: Pick<Storage, "getItem">): SaveData {
       texts: data.texts && typeof data.texts === "object" ? data.texts : {},
       settings: typeof data.settings === "string" ? data.settings : null,
       unlockAll: data.unlockAll === true,
+      tutorialSeen: data.tutorialSeen === true,
     };
   } catch {
     return emptySave();

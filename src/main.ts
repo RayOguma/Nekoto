@@ -185,6 +185,10 @@ document.querySelector("#erase-save")!.addEventListener("click", () => {
 // ---- ゲームの画面の幅 ----
 // 高さは文で決めた高さのまま、見える横幅を窓に合わせて広げる（黒い余りを出さない）。世界より広くはしない。
 
+// 描く紙（canvas）は、表示する大きさ × 画面の細かさ（devicePixelRatio）で用意する。
+// ゲームの中の大きさ（縦 450）のまま描いて引き伸ばすと、ぼやけるため。描くときは、この倍率をかけて描く。
+let drawScale = 1;
+
 function fitScreen(state: GameState) {
   const box = canvas.parentElement!.getBoundingClientRect();
   const shownHeight = canvas.getBoundingClientRect().height || box.height;
@@ -193,9 +197,12 @@ function fitScreen(state: GameState) {
   if (state.screen.width !== width) {
     state.screen = { width, height };
   }
-  if (canvas.width !== width || canvas.height !== height) {
-    canvas.width = width;
-    canvas.height = height;
+  drawScale = Math.max(1, (shownHeight * (window.devicePixelRatio || 1)) / height);
+  const pixelWidth = Math.round(width * drawScale);
+  const pixelHeight = Math.round(height * drawScale);
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
   }
 }
 
@@ -296,6 +303,10 @@ function openStage(index: number) {
   document.body.classList.remove("menu");
   editor.load(text);
   build(text);
+  // はじめてステージを開いたら、あそびかたを出す。
+  if (!save.tutorialSeen && !tutorialOpen) {
+    openTutorial();
+  }
 }
 
 // メニューを開く。ステージの名前と、クリアしたかの並びを、名前「ステージ名」「クリアした」に入れて渡す。
@@ -335,6 +346,52 @@ function watchMenu(state: GameState) {
     openSettings();
   }
 }
+
+// ---- あそびかた（チュートリアル） ----
+// はじめてステージを開いたときに出す（見たことはセーブに残す）。「？ あそびかた」で、いつでも見られる。
+
+const tutorial = document.querySelector<HTMLElement>("#tutorial")!;
+const tutorialPages = [...tutorial.querySelectorAll<HTMLElement>(".page")];
+const tutorialPage = document.querySelector<HTMLElement>("#tutorial-page")!;
+const tutorialBack = document.querySelector<HTMLButtonElement>("#tutorial-back")!;
+const tutorialNext = document.querySelector<HTMLButtonElement>("#tutorial-next")!;
+let tutorialAt = 0;
+let tutorialOpen = false;
+
+function showTutorialPage(at: number) {
+  tutorialAt = at;
+  tutorialPages.forEach((page, i) => (page.hidden = i !== at));
+  tutorialPage.textContent = `${at + 1} / ${tutorialPages.length}`;
+  tutorialBack.hidden = at === 0;
+  tutorialNext.textContent = at + 1 < tutorialPages.length ? "つぎへ ▶" : "はじめる ▶";
+}
+
+function openTutorial() {
+  tutorialOpen = true;
+  tutorial.hidden = false;
+  showTutorialPage(0);
+  tutorialNext.focus();
+}
+
+function closeTutorial() {
+  tutorialOpen = false;
+  tutorial.hidden = true;
+  if (!save.tutorialSeen) {
+    save.tutorialSeen = true;
+    persist();
+  }
+  canvas.focus();
+}
+
+tutorialBack.addEventListener("click", () => showTutorialPage(Math.max(0, tutorialAt - 1)));
+tutorialNext.addEventListener("click", () => {
+  if (tutorialAt + 1 < tutorialPages.length) {
+    showTutorialPage(tutorialAt + 1);
+  } else {
+    closeTutorial();
+  }
+});
+document.querySelector("#open-tutorial")!.addEventListener("click", openTutorial);
 
 // ---- ヒント ----
 // 「💡 ヒント」を押すたびに、そのステージのヒントを1つずつ増やして見せる（やさしい順）。ステージを開き直すと、はじめから。
@@ -412,9 +469,11 @@ let mouse: Point | undefined;
 const MOUSE_KEY = "マウス";
 
 // 画面の上の位置を、ゲームの中の位置（canvas の画素）にする。
+// 画面の上の位置を、ゲームの中の位置にする（描く紙の画素ではなく、ゲームの中の大きさで数える）。
 function pointOf(event: MouseEvent): Point {
   const rect = canvas.getBoundingClientRect();
-  return { x: ((event.clientX - rect.left) * canvas.width) / rect.width, y: ((event.clientY - rect.top) * canvas.height) / rect.height };
+  const screen = game?.screen ?? { width: canvas.width, height: canvas.height };
+  return { x: ((event.clientX - rect.left) * screen.width) / rect.width, y: ((event.clientY - rect.top) * screen.height) / rect.height };
 }
 canvas.addEventListener("pointermove", (event) => {
   mouse = pointOf(event);
@@ -430,6 +489,26 @@ window.addEventListener("pointerup", () => held.delete(MOUSE_KEY));
 const typingInCode = (event: Event) => event.target instanceof Element && event.target.closest("#code, #settings") !== null;
 
 window.addEventListener("keydown", (event) => {
+  // あそびかたを出している間は、← → でめくる。エンターで次へ、Esc で閉じる。ゲームには渡さない。
+  if (tutorialOpen) {
+    if (event.key === "ArrowRight" || event.key === "Enter") {
+      tutorialNext.click();
+    } else if (event.key === "ArrowLeft") {
+      showTutorialPage(Math.max(0, tutorialAt - 1));
+    } else if (event.key === "Escape") {
+      closeTutorial();
+    }
+    event.preventDefault();
+    return;
+  }
+  // 下の文を打っている途中で Esc を押したら、ゲームの操作に戻る（上の画面をクリックしなくて済むように）。
+  // 日本語の変換中の Esc は、変換を取り消すのに使うので、ここでは使わない。
+  if (event.key === "Escape" && !event.isComposing && event.target instanceof Element && event.target.closest("#code")) {
+    event.preventDefault();
+    (document.activeElement as HTMLElement | null)?.blur();
+    canvas.focus();
+    return;
+  }
   if (typingInCode(event)) {
     return;
   }
@@ -478,7 +557,7 @@ function frame(now: number) {
   }
   last = now;
   // メニューは、はじめのクリックの前から進める（真ん中にそろえる文などを動かすため）。操作と音は、クリックしてから。
-  if (game && (started || mode === "メニュー") && !settingsOpen) {
+  if (game && (started || mode === "メニュー") && !settingsOpen && !tutorialOpen) {
     let steps = 0;
     while (stored >= STEP_SECONDS && steps < 5) {
       const input = started ? { keys: [...new Set([...held, ...pressedSinceStep])], clicks, mouse } : { keys: [] };
@@ -522,6 +601,8 @@ function frame(now: number) {
   }
   if (game) {
     fitScreen(game);
+    ctx.setTransform(drawScale, 0, 0, drawScale, 0, 0);
+    ctx.imageSmoothingQuality = "high";
     render(ctx, game, { selected: null, linked: [], selectedText: null, linkedTexts: [], editing: null, pointer: null }, false, imageOf);
   }
   requestAnimationFrame(frame);
