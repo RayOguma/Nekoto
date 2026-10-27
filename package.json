@@ -9,7 +9,8 @@
     "typecheck": "tsc && tsc -p electron --noEmit",
     "test": "vitest run --passWithNoTests",
     "app": "npm run build && tsc -p electron && electron .",
-    "dist": "npm run build && tsc -p electron && electron-builder --win"
+    "dist": "npm run build && tsc -p electron && electron-builder --win",
+    "release": "npm run build && tsc -p electron && electron-builder --win --publish always"
   },
   "devDependencies": {
     "@codemirror/commands": "^6.11.1",
@@ -48,6 +49,17 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "shortcutName": "ねこと"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "RayOguma",
+        "repo": "Nekoto",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
   }
 }
