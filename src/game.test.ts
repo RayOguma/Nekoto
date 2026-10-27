@@ -81,3 +81,18 @@ test("設定の文が読める。はじめの音楽の音量は小さい", () =>
   expect(settings.musicVolume).toBe(3);
   expect(settings.soundVolume).toBe(80);
 });
+
+test("メニュー：字の部品（副題・札の名前）が真ん中にそろう", () => {
+  const game = gameOf(menu);
+  game.variables.set("ステージ名", ["ジャンプ", "向き", "速さ"]);
+  game.variables.set("クリアした", [false, false, false]);
+  step(game, { keys: [] });
+  const center = (thing: { x: number; width: number }) => thing.x + thing.width / 2;
+  const subtitle = game.things.find((thing) => thing.kinds.includes("副題"))!;
+  expect(Math.abs(center(subtitle) - 400)).toBeLessThan(1);
+  step(game, { keys: [], clicks: [{ x: 400, y: 450 - 90 - 30 }] });
+  step(game, { keys: [] });
+  const cards = game.things.filter((thing) => thing.kinds.includes("札"));
+  const names = game.things.filter((thing) => thing.kinds.includes("札名"));
+  names.forEach((name, i) => expect(Math.abs(center(name) - center(cards[i]))).toBeLessThan(1));
+});
