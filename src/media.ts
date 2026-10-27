@@ -39,7 +39,7 @@ export function imageOf(name: string): CanvasImageSource | null {
 // ---- 音 ----
 
 // 音量（0〜1）。BGM は何度も鳴らす音、効果音は1回の音。
-export const volume = { bgm: 0.3, se: 0.8 };
+export const volume = { bgm: 0.03, se: 0.8 };
 
 type Playing = { audio: HTMLAudioElement; name: string; scene: string | null; loop: boolean };
 let playing: Playing[] = [];
