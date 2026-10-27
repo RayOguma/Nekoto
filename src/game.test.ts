@@ -215,3 +215,30 @@ test("メニュー：ひらけたページがあると ▶ が出て、押すと
   expect(labels()).toEqual(["11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]);
   expect(game.variables.get("ページ")).toBe(2);
 });
+
+test("メニュー：タイトルとステージ選択を行き来しても、飾りや矢印が消えない", () => {
+  const game = gameOf(menu);
+  const names = Array.from({ length: 20 }, (_, i) => `ステージ${i + 1}`);
+  game.variables.set("ステージ名", names);
+  game.variables.set("クリアした", names.map(() => false));
+  game.variables.set("遊べる", names.map((_, i) => i === 0));
+  game.variables.set("ページ数", 2);
+  game.variables.set("ひらけたページ", 1);
+  // その種類だけを数える（仲間は数えない。前へボタン は 次へボタン の仲間）。
+  const count = (kind: string) => game.things.filter((thing) => thing.kinds[0] === kind).length;
+  step(game, { keys: [] });
+  // ステージ選択へ（えらぶボタン）。
+  step(game, { keys: [], clicks: [{ x: 400, y: 450 - 90 - 30 }] });
+  for (let i = 0; i < 5; i++) step(game, { keys: [] });
+  expect(count("次へボタン")).toBe(1);
+  expect(count("前へボタン")).toBe(1);
+  // ステージ選択では、飾りは画面の外。
+  const cat = game.things.find((thing) => thing.kinds.includes("ねこ"))!;
+  expect(cat.x).toBeGreaterThan(800);
+  // もどる（横 250 縦 10、高さ 60）で、タイトルへ。
+  step(game, { keys: [], clicks: [{ x: 400, y: 450 - 10 - 30 }] });
+  for (let i = 0; i < 5; i++) step(game, { keys: [] });
+  expect(count("ねこ")).toBe(1);
+  expect(count("旗")).toBe(1);
+  expect(game.things.find((thing) => thing.kinds.includes("ねこ"))!.x).toBeLessThan(800);
+});

@@ -2,8 +2,6 @@
 
 import {
   check,
-  CheckError,
-  CheckErrors,
   createGame,
   cssVariables,
   type GameState,
@@ -18,6 +16,7 @@ import {
   tokenize,
 } from "wokoto";
 import { createCodeEditor } from "./editor";
+import { lineOf, problemsOf } from "./problems";
 import { handleSounds, imageOf, setVolume, stopAllSounds } from "./media";
 import { clearSave, emptySave, loadSave, rememberText, stageText, writeSave } from "./save";
 import { chosenStage, MENU_TEXT, openedPages, PAGE_SIZE, pageCount, playable, SETTINGS_TEXT, STAGES } from "./stages";
@@ -82,10 +81,8 @@ function applySettingsText(text: string) {
       persist();
     }
   } catch (error) {
-    const errors = error instanceof CheckErrors ? error.all : error instanceof CheckError ? [error] : [];
-    const lineOf = (at: number) => text.slice(0, at).split("\n").length;
     settingsProblems.replaceChildren(
-      ...(errors.length > 0 ? errors.map((each) => `${lineOf(each.start)}行目：${each.message}`) : [String(error)]).map((line) => {
+      ...problemsOf(error).map((each) => (each.at === null ? each.message : `${lineOf(text, each.at)}行目：${each.message}`)).map((line) => {
         const li = document.createElement("li");
         li.textContent = line;
         return li;
@@ -221,19 +218,17 @@ let mode: "メニュー" | "ステージ" = "メニュー";
 // クリアしたステージの番号（0 から）。セーブには、ファイル名で残している。
 const clearedStages = new Set<number>(STAGES.flatMap((stage, index) => (save.cleared.includes(stage.file) ? [index] : [])));
 
-// 間違いを、下の問題の一覧と帯に出す。行を押すと、その行へ行く。
+// 間違いを、下の問題の一覧と帯に出す。行を押すと、その行へ行く。読み取りの間違い（字下げ など）も、行の番号つきで出す。
 function showProblem(text: string, error: unknown) {
-  const errors = error instanceof CheckErrors ? error.all : error instanceof CheckError ? [error] : [];
-  const lineOf = (at: number) => text.slice(0, at).split("\n").length;
   problems.replaceChildren();
-  const items = errors.length > 0 ? errors.map((each) => ({ text: each.message, at: each.start as number | null })) : [{ text: String(error), at: null }];
+  const items = problemsOf(error);
   for (const item of items) {
     const li = document.createElement("li");
-    li.textContent = item.text;
+    li.textContent = item.message;
     if (item.at !== null) {
       const line = document.createElement("span");
       line.className = "line";
-      line.textContent = `${lineOf(item.at)}行目`;
+      line.textContent = `${lineOf(text, item.at)}行目`;
       li.append(line);
       li.addEventListener("click", () => editor.goTo(item.at!));
     }
@@ -251,8 +246,8 @@ function clearProblems() {
   statusProblems.classList.remove("bad");
 }
 
-// 文からゲームを作り直す。間違いがあれば、前のゲームを動かしたまま理由を出す。
-function build(text: string) {
+// 文からゲームを作り直す。間違いがあれば、前のゲームを動かしたまま理由を出す。作れたら true。
+function build(text: string): boolean {
   try {
     const next = createGame(check(parse(tokenize(text), text)));
     game = next;
@@ -264,8 +259,10 @@ function build(text: string) {
     if (started) {
       handleSounds(game.sounds.splice(0));
     }
+    return true;
   } catch (error) {
     showProblem(text, error);
+    return false;
   }
 }
 
@@ -274,6 +271,10 @@ let timer: number | undefined;
 const editor = createCodeEditor(document.querySelector<HTMLElement>("#code")!, () => {
   window.clearTimeout(timer);
   timer = window.setTimeout(function rebuild() {
+    // 待っている間にメニューへ戻っていたら、何もしない（メニューのゲームを、ステージのゲームで上書きしないように）。
+    if (mode !== "ステージ") {
+      return;
+    }
     if (editor.composing()) {
       timer = window.setTimeout(rebuild, 300);
       return;
@@ -301,8 +302,14 @@ function openStage(index: number) {
   nextButton.textContent = index + 1 < STAGES.length ? "つぎのステージへ ▶" : "メニューへ ▶";
   mode = "ステージ";
   document.body.classList.remove("menu");
+  window.clearTimeout(timer);
   editor.load(text);
-  build(text);
+  // まず、はじめの文（必ず動く）でゲームを作る。書き換えた文に間違いがあっても、前の画面（メニューなど）のゲームが残らないように。
+  // そのあとで書き換えた文を読み、間違いがあれば下に出す（ゲームは、はじめの文のまま動く）。
+  build(stage.text);
+  if (text !== stage.text) {
+    build(text);
+  }
   // はじめてステージを開いたら、あそびかたを出す。
   if (!save.tutorialSeen && !tutorialOpen) {
     openTutorial();
@@ -311,6 +318,12 @@ function openStage(index: number) {
 
 // メニューを開く。ステージの名前と、クリアしたかの並びを、名前「ステージ名」「クリアした」に入れて渡す。
 function openMenu() {
+  // ステージから戻るときは、作り直しの予約を取り消す（メニューのゲームを上書きしないように）。書きかけの文は、セーブに残す。
+  if (mode === "ステージ") {
+    window.clearTimeout(timer);
+    rememberText(save, STAGES[stageIndex].file, STAGES[stageIndex].text, editor.text());
+    persist();
+  }
   mode = "メニュー";
   document.body.classList.add("menu");
   build(MENU_TEXT);
