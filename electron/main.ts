@@ -2,7 +2,7 @@
 // ファイルの読み書きはしない（ステージ・絵・音は、組み立てるときに画面の中に入っている。セーブは画面の localStorage）。
 // 起動したときに、GitHub の Releases（RayOguma/Nekoto）に新しい版がないかを見て、あれば入れ替える（自動更新）。
 
-import { app, BrowserWindow, dialog } from "electron";
+import { app, BrowserWindow, dialog, shell } from "electron";
 import updater from "electron-updater";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,6 +27,13 @@ function createWindow() {
     backgroundColor: "#000000",
   });
   mainWindow.setMenuBarVisibility(false);
+  // 画面の中のリンク（「をこと の書き方」など）は、この窓ではなく、ふだんのブラウザで開く。
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("https://")) {
+      void shell.openExternal(url);
+    }
+    return { action: "deny" };
+  });
   mainWindow.loadFile(path.join(here, "..", "dist", "index.html"));
   mainWindow.on("closed", () => {
     mainWindow = null;
