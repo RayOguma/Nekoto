@@ -1,18 +1,63 @@
 // ねこと の入口。上でステージのゲームを動かし、下の文を書き換えると始め直す。クリアしたら次のステージへ。
 
-import { check, CheckError, CheckErrors, createGame, type GameState, keyWordOf, parse, render, STEP_SECONDS, step, tokenize } from "wokoto";
+import {
+  check,
+  CheckError,
+  CheckErrors,
+  createGame,
+  cssVariables,
+  DEFAULT_SETTINGS,
+  type GameState,
+  keyWordOf,
+  parse,
+  render,
+  type Settings,
+  STEP_SECONDS,
+  step,
+  tokenize,
+} from "wokoto";
 import { createCodeEditor } from "./editor";
 import { handleSounds, imageOf, stopAllSounds } from "./media";
 import { STAGES } from "./stages";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
 const start = document.querySelector<HTMLButtonElement>("#start")!;
-const message = document.querySelector<HTMLElement>("#message")!;
-const stageTitle = document.querySelector<HTMLElement>("#stage-title")!;
+const fileName = document.querySelector<HTMLElement>("#file-name")!;
+const tab = document.querySelector<HTMLElement>("#tab")!;
+const problems = document.querySelector<HTMLUListElement>("#problems")!;
+const statusProblems = document.querySelector<HTMLElement>("#status-problems")!;
+const statusStage = document.querySelector<HTMLElement>("#status-stage")!;
 const resetButton = document.querySelector<HTMLButtonElement>("#reset")!;
 const cleared = document.querySelector<HTMLElement>("#cleared")!;
 const nextButton = document.querySelector<HTMLButtonElement>("#next")!;
 const ctx = canvas.getContext("2d")!;
+
+// ---- 見た目（テーマ） ----
+// 色は、つなぎのテーマと同じ CSS の変数。設定の文ができたら、そこから決める。
+
+function applyLook(settings: Settings) {
+  for (const [name, value] of Object.entries(cssVariables(settings))) {
+    document.documentElement.style.setProperty(name, value);
+  }
+}
+applyLook(DEFAULT_SETTINGS);
+
+// ---- ゲームの画面の幅 ----
+// 高さは文で決めた高さのまま、見える横幅を窓に合わせて広げる（黒い余りを出さない）。世界より広くはしない。
+
+function fitScreen(state: GameState) {
+  const box = canvas.parentElement!.getBoundingClientRect();
+  const shownHeight = canvas.getBoundingClientRect().height || box.height;
+  const height = state.screen.height;
+  const width = Math.max(1, Math.min(Math.round((height * box.width) / shownHeight), state.world.width));
+  if (state.screen.width !== width) {
+    state.screen = { width, height };
+  }
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+}
 
 // ---- 文からゲームを作る ----
 
@@ -25,12 +70,34 @@ let isCleared = false;
 // はじめのクリックが済んだか（済むまでゲームを進めず、音も鳴らさない）。
 let started = false;
 
+// 間違いを、下の問題の一覧と帯に出す。行を押すと、その行へ行く。
 function showProblem(text: string, error: unknown) {
   const errors = error instanceof CheckErrors ? error.all : error instanceof CheckError ? [error] : [];
   const lineOf = (at: number) => text.slice(0, at).split("\n").length;
-  message.textContent =
-    errors.length > 0 ? errors.map((each) => `${lineOf(each.start)}行目：${each.message}`).join("\n") : String(error);
-  message.hidden = false;
+  problems.replaceChildren();
+  const items = errors.length > 0 ? errors.map((each) => ({ text: each.message, at: each.start as number | null })) : [{ text: String(error), at: null }];
+  for (const item of items) {
+    const li = document.createElement("li");
+    li.textContent = item.text;
+    if (item.at !== null) {
+      const line = document.createElement("span");
+      line.className = "line";
+      line.textContent = `${lineOf(item.at)}行目`;
+      li.append(line);
+      li.addEventListener("click", () => editor.goTo(item.at!));
+    }
+    problems.append(li);
+  }
+  problems.hidden = false;
+  statusProblems.textContent = `✖ 問題 ${items.length}`;
+  statusProblems.classList.add("bad");
+}
+
+function clearProblems() {
+  problems.hidden = true;
+  problems.replaceChildren();
+  statusProblems.textContent = "✔ 問題なし";
+  statusProblems.classList.remove("bad");
 }
 
 // 文からゲームを作り直す。間違いがあれば、前のゲームを動かしたまま理由を出す。
@@ -41,7 +108,7 @@ function build(text: string) {
     gameText = text;
     isCleared = false;
     cleared.hidden = true;
-    message.hidden = true;
+    clearProblems();
     stopAllSounds();
     if (started) {
       handleSounds(game.sounds.splice(0));
@@ -62,12 +129,15 @@ const editor = createCodeEditor(document.querySelector<HTMLElement>("#code")!, (
     }
     build(editor.text());
   }, 300);
+  tab.classList.toggle("changed", editor.text() !== STAGES[stageIndex].text);
 });
 
 function openStage(index: number) {
   stageIndex = index;
   const stage = STAGES[index];
-  stageTitle.textContent = `ステージ ${index + 1}：${stage.title}`;
+  fileName.textContent = stage.file;
+  statusStage.textContent = `ステージ ${index + 1} / ${STAGES.length}：${stage.title}`;
+  tab.classList.remove("changed");
   nextButton.textContent = index + 1 < STAGES.length ? "つぎのステージへ" : "さいごのステージでした";
   nextButton.disabled = index + 1 >= STAGES.length;
   editor.load(stage.text);
@@ -172,6 +242,7 @@ function frame(now: number) {
     stored = 0;
   }
   if (game) {
+    fitScreen(game);
     render(ctx, game, { selected: null, linked: [], selectedText: null, linkedTexts: [], editing: null, pointer: null }, false, imageOf);
   }
   requestAnimationFrame(frame);

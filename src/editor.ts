@@ -3,7 +3,18 @@
 
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { EditorState, type Range, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
-import { Decoration, type DecorationSet, EditorView, keymap, lineNumbers } from "@codemirror/view";
+import {
+  Decoration,
+  type DecorationSet,
+  drawSelection,
+  EditorView,
+  GutterMarker,
+  gutter,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  keymap,
+  lineNumbers,
+} from "@codemirror/view";
 import { colorRanges } from "wokoto";
 import { CLOSE_MARK, findRegions, insideRegion, OPEN_MARK } from "./regions";
 
@@ -92,23 +103,57 @@ function recolor(view: EditorView) {
   view.dispatch({ effects: setColors.of(marks) });
 }
 
+// 色は、つなぎのテーマと同じ CSS の変数（main.ts が設定の文から書き込む）。
 const theme = EditorView.theme({
-  "&": { height: "100%", fontSize: "17px", backgroundColor: "#ffffff" },
-  ".cm-content": { fontFamily: '"BIZ UDGothic", "MS Gothic", monospace', padding: "8px 0" },
-  ".cm-gutters": { backgroundColor: "#faf6ef", color: "#b9a99a", border: "none" },
-  ".nk-locked": { color: "#8c8c96" },
-  ".nk-locked span": { opacity: 0.75 },
-  ".nk-editable": { backgroundColor: "#fff6d6", boxShadow: "inset 4px 0 0 #f0a050" },
-  ".nk-mark": { backgroundColor: "#ffe9b8", fontWeight: "bold" },
-  ".nk-mark .nk-comment": { color: "#a0581a", fontStyle: "normal" },
-  ".nk-subject": { color: "#c2620a" },
-  ".nk-object": { color: "#2f8a3e" },
-  ".nk-partner": { color: "#2a64c9" },
-  ".nk-place": { color: "#8a3fc9" },
-  ".nk-amount": { color: "#9a7400" },
-  ".nk-action": { color: "#c8383a" },
-  ".nk-condition": { fontWeight: "bold", backgroundColor: "rgba(0, 0, 0, 0.07)", borderRadius: "3px" },
-  ".nk-comment": { color: "#7a8494", fontStyle: "italic" },
+  "&": { height: "100%", fontSize: "var(--editor-font-size)", backgroundColor: "var(--editor-background)", color: "var(--ui-text)" },
+  ".cm-scroller": { fontFamily: '"BIZ UDGothic", "Cascadia Mono", "MS Gothic", monospace', lineHeight: "1.65" },
+  ".cm-content": { padding: "10px 0", caretColor: "var(--editor-caret)" },
+  ".cm-cursor": { borderLeftColor: "var(--editor-caret)", borderLeftWidth: "2px" },
+  ".cm-gutters": { backgroundColor: "var(--editor-background)", color: "var(--editor-gutter)", border: "none" },
+  ".cm-lineNumbers .cm-gutterElement": { padding: "0 10px 0 14px" },
+  ".cm-activeLine": { backgroundColor: "var(--editor-active-line)" },
+  ".cm-activeLineGutter": { backgroundColor: "transparent", color: "var(--ui-text)" },
+  "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": { backgroundColor: "var(--ui-selected) !important" },
+  // 鍵の行は少し薄く。変えられる行は、差し色の線と薄い地。
+  ".nk-locked": { opacity: 0.55 },
+  ".nk-editable": { backgroundColor: "color-mix(in srgb, var(--ui-highlight) 12%, transparent)", boxShadow: "inset 3px 0 0 var(--ui-highlight)" },
+  ".nk-mark": { backgroundColor: "color-mix(in srgb, var(--ui-highlight) 22%, transparent)", boxShadow: "inset 3px 0 0 var(--ui-highlight)" },
+  ".nk-mark .nk-comment": { color: "var(--ui-highlight)", fontStyle: "normal", fontWeight: "bold" },
+  ".nk-pen": { color: "var(--ui-highlight)", padding: "0 4px" },
+  ".nk-subject": { color: "var(--role-subject)" },
+  ".nk-object": { color: "var(--role-object)" },
+  ".nk-partner": { color: "var(--role-partner)" },
+  ".nk-place": { color: "var(--role-place)" },
+  ".nk-amount": { color: "var(--role-amount)" },
+  ".nk-action": { color: "var(--role-action)" },
+  ".nk-condition": { fontWeight: "bold", backgroundColor: "var(--ui-tint)", borderRadius: "3px" },
+  ".nk-comment": { color: "var(--editor-comment)", fontStyle: "italic" },
+});
+
+// 変えられる行の左に出す ✏ の印。
+class PenMarker extends GutterMarker {
+  toDOM() {
+    const span = document.createElement("span");
+    span.className = "nk-pen";
+    span.textContent = "✏";
+    return span;
+  }
+}
+const pen = new PenMarker();
+const penGutter = gutter({
+  class: "nk-pen-gutter",
+  markers(view) {
+    const builder = new RangeSetBuilder<GutterMarker>();
+    const regions = findRegions(view.state.doc.toString());
+    for (let n = 1; n <= view.state.doc.lines; n++) {
+      const line = view.state.doc.line(n);
+      if (regions.some((region) => region.from <= line.from && line.to <= region.end)) {
+        builder.add(line.from, line.from, pen);
+      }
+    }
+    return builder.finish();
+  },
+  initialSpacer: () => pen,
 });
 
 export type CodeEditor = {
@@ -117,12 +162,18 @@ export type CodeEditor = {
   text(): string;
   // 日本語の変換中か（変換中は始め直さない）。
   composing(): boolean;
+  // その位置へカーソルを動かして見せる（問題の行を押したとき）。
+  goTo(at: number): void;
 };
 
 // onChange は、遊ぶ人が文を書き換えたときに呼ぶ。
 export function createCodeEditor(parent: HTMLElement, onChange: () => void): CodeEditor {
   const extensions = [
     lineNumbers(),
+    penGutter,
+    highlightActiveLine(),
+    highlightActiveLineGutter(),
+    drawSelection(),
     history(),
     keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
     lockFilter,
@@ -145,5 +196,10 @@ export function createCodeEditor(parent: HTMLElement, onChange: () => void): Cod
     },
     text: () => view.state.doc.toString(),
     composing: () => view.composing,
+    goTo(at) {
+      const pos = Math.min(at, view.state.doc.length);
+      view.dispatch({ selection: { anchor: pos }, scrollIntoView: true });
+      view.focus();
+    },
   };
 }
