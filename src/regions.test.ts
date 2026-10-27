@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { findRegions, insideRegion } from "./regions";
+import { findRegions, insideRegion, lockedSections } from "./regions";
 
 const text = ["ねこ という 丸 を 作る。", "# ▼ 変えられる", "ねこ の 大きさ を 40 に する。", "# ▲ ここまで", "旗 という 三角 を 作る。"].join("\n");
 
@@ -33,4 +33,23 @@ test("閉じる印がなければ、文の終わりまで", () => {
   const open = "a\n# ▼ 変えられる\nb\nc";
   const [region] = findRegions(open);
   expect(open.slice(region.from, region.end)).toBe("b\nc");
+});
+
+test("鍵のまとまりは、見出しから空行の手前まで。変えられるところやコメントだけのまとまりは畳まない", () => {
+  const text = [
+    "# ステージ1",
+    "# 説明の行",
+    "",
+    "# 世界",
+    "世界 の 大きさ を 横 2400 縦 450 に する。",
+    "カメラ は ねこ を 追う。",
+    "",
+    "# 雲",
+    "# ▼ 変えられる",
+    "雲 という 四角 を 作る。",
+    "# ▲ ここまで",
+  ].join("\n");
+  const sections = lockedSections(text);
+  expect(sections.map((each) => [each.title, each.lines])).toEqual([["世界", 2]]);
+  expect(text.slice(sections[0].from, sections[0].to)).toBe("\n世界 の 大きさ を 横 2400 縦 450 に する。\nカメラ は ねこ を 追う。");
 });

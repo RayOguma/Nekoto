@@ -15,8 +15,9 @@ import {
   keymap,
   lineNumbers,
 } from "@codemirror/view";
+import { codeFolding, foldEffect, foldGutter, foldService } from "@codemirror/language";
 import { colorRanges } from "wokoto";
-import { CLOSE_MARK, findRegions, insideRegion, OPEN_MARK } from "./regions";
+import { CLOSE_MARK, findRegions, insideRegion, lockedSections, OPEN_MARK } from "./regions";
 
 // 変えられるところの外を書き換えようとしたら、取り消す。
 const lockFilter = EditorState.transactionFilter.of((tr) => {
@@ -128,6 +129,17 @@ const theme = EditorView.theme({
   ".nk-action": { color: "var(--role-action)" },
   ".nk-condition": { fontWeight: "bold", backgroundColor: "var(--ui-tint)", borderRadius: "3px" },
   ".nk-comment": { color: "var(--editor-comment)", fontStyle: "italic" },
+  ".nk-folded": {
+    marginLeft: "10px",
+    padding: "0 8px",
+    borderRadius: "999px",
+    fontSize: "0.85em",
+    color: "var(--ui-text-muted)",
+    backgroundColor: "var(--ui-hover)",
+    border: "1px solid var(--ui-border)",
+    cursor: "pointer",
+  },
+  ".nk-fold-mark": { color: "var(--editor-gutter)", cursor: "pointer", padding: "0 2px" },
 });
 
 // 変えられる行の左に出す ✏ の印。
@@ -156,6 +168,35 @@ const penGutter = gutter({
   initialSpacer: () => pen,
 });
 
+// ---- 鍵のまとまりを畳む ----
+// 見出しのコメント（「# 雲」など）の行で畳める。畳むと「🔒 12行」の札になり、押すと開く。
+
+const sectionFolds = foldService.of((state, lineStart, lineEnd) => {
+  const section = lockedSections(state.doc.toString()).find((each) => each.from === lineEnd);
+  return section && lineStart <= section.from ? { from: section.from, to: section.to } : null;
+});
+
+const folding = codeFolding({
+  preparePlaceholder: (state, range) => state.doc.lineAt(range.to).number - state.doc.lineAt(range.from).number,
+  placeholderDOM(_view, onclick, lines: number) {
+    const tag = document.createElement("span");
+    tag.className = "nk-folded";
+    tag.textContent = `🔒 ${lines}行`;
+    tag.title = "押すと開く（書き換えられない行）";
+    tag.onclick = onclick;
+    return tag;
+  },
+});
+
+const foldMarks = foldGutter({
+  markerDOM(open) {
+    const mark = document.createElement("span");
+    mark.className = "nk-fold-mark";
+    mark.textContent = open ? "▾" : "▸";
+    return mark;
+  },
+});
+
 export type CodeEditor = {
   // 文を入れ替える（鍵を気にしない）。
   load(text: string): void;
@@ -170,7 +211,10 @@ export type CodeEditor = {
 export function createCodeEditor(parent: HTMLElement, onChange: () => void): CodeEditor {
   const extensions = [
     lineNumbers(),
+    foldMarks,
     penGutter,
+    sectionFolds,
+    folding,
     highlightActiveLine(),
     highlightActiveLineGutter(),
     drawSelection(),
@@ -193,6 +237,15 @@ export function createCodeEditor(parent: HTMLElement, onChange: () => void): Cod
       // 状態ごと作り直す（前のステージの「元に戻す」が残らないように）。作り直しは書き換えではないので、onChange は呼ばない。
       view.setState(EditorState.create({ doc: text, extensions }));
       recolor(view);
+      // 鍵のまとまりを畳み、最初の変えられる行へ移る（下までスクロールしなくて済むように）。
+      const first = findRegions(text)[0];
+      view.dispatch({
+        effects: [
+          ...lockedSections(text).map((section) => foldEffect.of({ from: section.from, to: section.to })),
+          ...(first ? [EditorView.scrollIntoView(first.from, { y: "center" })] : []),
+        ],
+        selection: first ? { anchor: first.from } : undefined,
+      });
     },
     text: () => view.state.doc.toString(),
     composing: () => view.composing,
