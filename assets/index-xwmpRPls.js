@@ -13,7 +13,8 @@
 `)){let e=r+i.length,a=i.trim();n===null&&a===`# ▼ 変えられる`?n=e+1:n!==null&&a===`# ▲ ここまで`&&(t.push({from:n,end:Math.max(n,r-1)}),n=null),r=e+1}return n!==null&&t.push({from:Math.min(n,e.length),end:e.length}),t}function oy(e,t,n){return e.some(e=>e.from<=t&&n<=e.end)}function sy(e){let t=ay(e),n=e.split(`
 `),r=[],i=0;for(let e of n)r.push(i),i+=e.length+1;let a=e=>e.trim().startsWith(`#`),o=e=>e.trim()===`# ▼ 変えられる`||e.trim()===`# ▲ ここまで`,s=[];for(let e=0;e<n.length;e++){let i=n[e];if(!a(i)||o(i)||e>0&&n[e-1].trim()!==``)continue;let c=e;for(;c+1<n.length&&n[c+1].trim()!==``;)c+=1;if(c===e)continue;let l=n.slice(e+1,c+1),u=r[e]+i.length,d=r[c]+n[c].length;t.some(e=>e.from<=d&&u<=e.end)||l.some(o)||l.every(a)||s.push({title:i.trim().replace(/^#\s*/,``),from:u,to:d,lines:l.length})}return s}function cy(e){let t=[],n=0;for(let r of e.split(`
 `)){let e=/^(?!\s*#).* を (\S+) に する。\s*$/.exec(r);if(e){let r=n+e.index+e[0].lastIndexOf(` を ${e[1]} に する。`)+3;t.push({from:r,to:r+e[1].length})}n+=r.length+1}return t}function ly(e){return e.split(`
-`).filter(e=>e.trim()===`# ▼ 変えられる`||e.trim()===`# ▲ ここまで`).length}var uy=L.transactionFilter.of(e=>{if(!e.docChanged)return e;let t=ay(e.startState.doc.toString()),n=!0;return e.changes.iterChanges((e,r)=>{oy(t,e,r)||(n=!1)}),n&&ly(e.newDoc.toString())!==ly(e.startState.doc.toString())&&(n=!1),n?e:[]}),dy=B.line({class:`nk-editable`}),fy=B.line({class:`nk-mark`}),py=B.line({class:`nk-locked`});function my(e){let t=new Ls,n=ay(e.doc.toString());for(let r=1;r<=e.doc.lines;r++){let i=e.doc.line(r),a=i.text.trim();a===`# ▼ 変えられる`||a===`# ▲ ここまで`?t.add(i.from,i.from,fy):n.some(e=>e.from<=i.from&&i.to<=e.end)?t.add(i.from,i.from,dy):t.add(i.from,i.from,py)}return t.finish()}var hy=Jo.define({create:my,update:(e,t)=>t.docChanged?my(t.state):e,provide:e=>G.decorations.from(e)}),gy=I.define(),_y={主語:`nk-subject`,対象:`nk-object`,相手:`nk-partner`,場所:`nk-place`,"数量・値":`nk-amount`,動作:`nk-action`,条件の印:`nk-condition`,コメント:`nk-comment`},vy=Jo.define({create:()=>B.none,update(e,t){let n=e.map(t.changes);for(let e of t.effects)e.is(gy)&&(n=B.set(e.value,!0));return n},provide:e=>G.decorations.from(e)});function yy(e){let t=e.state.doc.toString(),n=La(t);if(!n)return;let r=n.filter(e=>e.start<e.end&&e.end<=t.length&&_y[e.kind]).map(e=>B.mark({class:_y[e.kind]}).range(e.start,e.end));e.dispatch({effects:gy.of(r)})}var by=G.theme({"&":{height:`100%`,fontSize:`var(--editor-font-size)`,backgroundColor:`var(--editor-background)`,color:`var(--ui-text)`},".cm-scroller":{fontFamily:`"BIZ UDGothic", "Cascadia Mono", "MS Gothic", monospace`,lineHeight:`1.65`},".cm-content":{padding:`10px 0`,caretColor:`var(--editor-caret)`},".cm-cursor":{borderLeftColor:`var(--editor-caret)`,borderLeftWidth:`2px`},".cm-gutters":{backgroundColor:`var(--editor-background)`,color:`var(--editor-gutter)`,border:`none`},".cm-lineNumbers .cm-gutterElement":{padding:`0 10px 0 14px`},".cm-activeLine":{backgroundColor:`var(--editor-active-line)`},".cm-activeLineGutter":{backgroundColor:`transparent`,color:`var(--ui-text)`},"&.cm-focused .cm-selectionBackground, .cm-selectionBackground":{backgroundColor:`var(--ui-selected) !important`},".nk-locked":{opacity:.55},".nk-editable":{backgroundColor:`color-mix(in srgb, var(--ui-highlight) 12%, transparent)`,boxShadow:`inset 3px 0 0 var(--ui-highlight)`},".nk-mark":{backgroundColor:`color-mix(in srgb, var(--ui-highlight) 22%, transparent)`,boxShadow:`inset 3px 0 0 var(--ui-highlight)`},".nk-mark .nk-comment":{color:`var(--ui-highlight)`,fontStyle:`normal`,fontWeight:`bold`},".nk-pen":{color:`var(--ui-highlight)`,padding:`0 4px`},".nk-subject":{color:`var(--role-subject)`},".nk-object":{color:`var(--role-object)`},".nk-partner":{color:`var(--role-partner)`},".nk-place":{color:`var(--role-place)`},".nk-amount":{color:`var(--role-amount)`},".nk-action":{color:`var(--role-action)`},".nk-condition":{fontWeight:`bold`,backgroundColor:`var(--ui-tint)`,borderRadius:`3px`},".nk-comment":{color:`var(--editor-comment)`,fontStyle:`italic`},".nk-folded":{marginLeft:`10px`,padding:`0 8px`,borderRadius:`999px`,fontSize:`0.85em`,color:`var(--ui-text-muted)`,backgroundColor:`var(--ui-hover)`,border:`1px solid var(--ui-border)`,cursor:`pointer`},".nk-fold-mark":{color:`var(--editor-gutter)`,cursor:`pointer`,padding:`0 2px`}}),xy=new class extends Up{toDOM(){let e=document.createElement(`span`);return e.className=`nk-pen`,e.textContent=`✏`,e}},Sy=Jp({class:`nk-pen-gutter`,markers(e){let t=new Ls,n=ay(e.state.doc.toString());for(let r=1;r<=e.state.doc.lines;r++){let i=e.state.doc.line(r);n.some(e=>e.from<=i.from&&i.to<=e.end)&&t.add(i.from,i.from,xy)}return t.finish()},initialSpacer:()=>xy}),Cy=Kh.of((e,t,n)=>{let r=sy(e.doc.toString()).find(e=>e.from===n);return r&&t<=r.from?{from:r.from,to:r.to}:null}),wy=og({preparePlaceholder:(e,t)=>e.doc.lineAt(t.to).number-e.doc.lineAt(t.from).number,placeholderDOM(e,t,n){let r=document.createElement(`span`);return r.className=`nk-folded`,r.textContent=`🔒 ${n}行`,r.title=`押すと開く（書き換えられない行）`,r.onclick=t,r}}),Ty=fg({markerDOM(e){let t=document.createElement(`span`);return t.className=`nk-fold-mark`,t.textContent=e?`▾`:`▸`,t}}),Ey=Jo.define({create:e=>cy(e.doc.toString()),update(e,t){return t.docChanged?e.map(e=>({from:t.changes.mapPos(e.from,-1),to:t.changes.mapPos(e.to,1)})):e}}),Dy=L.transactionFilter.of(e=>{if(!e.docChanged)return e;let t=e.startState.field(Ey),n=!0;return e.changes.iterChanges((e,r,i,a,o)=>{(!t.some(t=>t.from<=e&&r<=t.to)||/[\n\t]/.test(o.toString()))&&(n=!1)}),n?e:[]}),Oy=G.decorations.compute([Ey],e=>B.set(e.field(Ey).filter(e=>e.from<e.to).map(e=>B.mark({class:`nk-value`}).range(e.from,e.to)),!0)),ky=G.theme({".nk-value":{padding:`1px 6px`,borderRadius:`6px`,backgroundColor:`color-mix(in srgb, var(--ui-highlight) 18%, transparent)`,border:`1px solid var(--ui-highlight)`}});function Ay(e){return({state:t,dispatch:n})=>{let r=t.field(Ey,!1)??[];if(r.length===0)return!0;let i=t.selection.main.head,a=r.filter(e=>e.to<i).length-1,o=e?r.findIndex(e=>e.from>i):a,s=o===-1?r[e?0:r.length-1]:r[o];return n(t.update({selection:P.range(s.from,s.to),scrollIntoView:!0})),!0}}var jy=Zo.highest(hp.of([{key:`Enter`,run:ey},{key:`Tab`,run:ny,shift:ry},{key:`Mod-/`,run:iy}])),My=Zo.highest(hp.of([{key:`Tab`,run:Ay(!0),shift:Ay(!1)},{key:`Enter`,run:()=>!0}])),Ny=G.contentAttributes.of({style:`tab-size: 2em`});function Py(e,t,n=`ステージ`){let r=n===`ステージ`?[Ty,Sy,Cy,wy,uy,hy,jy]:[Ey,Dy,Oy,ky,My],i=[um(),...r,Bp(),mm(),Np(),Gg(),jh.of(`	`),L.tabSize.of(4),Ny,hp.of([...Qv,...u_]),vy,by,G.updateListener.of(e=>{e.docChanged&&(yy(e.view),t())})],a=new G({parent:e,state:L.create({doc:``,extensions:i})});return{load(e){if(a.setState(L.create({doc:e,extensions:i})),yy(a),n!==`ステージ`)return;let t=ay(e)[0];a.dispatch({effects:[...sy(e).map(e=>Qh.of({from:e.from,to:e.to})),...t?[G.scrollIntoView(t.from,{y:`center`})]:[]],selection:t?{anchor:t.from}:void 0})},text:()=>a.state.doc.toString(),composing:()=>a.composing,goTo(e){let t=Math.min(e,a.state.doc.length);a.dispatch({selection:{anchor:t},scrollIntoView:!0}),a.focus()}}}var Fy=new URL(`ねこ右ジャンプ-D-tegsyp.png`,import.meta.url).href,Iy=new URL(`ねこ右歩き1-DFeRQjxO.png`,import.meta.url).href,Ly=new URL(`ねこ右歩き2-C9j3ZjY4.png`,import.meta.url).href,Ry=new URL(`ねこ右立ち-yVSSotMM.png`,import.meta.url).href,zy=new URL(`ねこ左ジャンプ-Cf2QTqL4.png`,import.meta.url).href,By=new URL(`ねこ左歩き1-CbTo1o9j.png`,import.meta.url).href,Vy=new URL(`ねこ左歩き2-DzvWM6uP.png`,import.meta.url).href,Hy=new URL(`ねこ左立ち-B4dzWgiV.png`,import.meta.url).href,Uy=new URL(`ねずみ歩き1-CkXy_47m.png`,import.meta.url).href,Wy=new URL(`ねずみ歩き2-DZSysLWR.png`,import.meta.url).href,Gy=new URL(`タイトル-IfPuDTDj.png`,import.meta.url).href,Ky=new URL(`ボタン-DSbPDDrh.png`,import.meta.url).href,qy=new URL(`ボタン明るい-BeaHbUPi.png`,import.meta.url).href,Jy=new URL(`台-D5TuT__M.png`,import.meta.url).href,Yy=new URL(`地面-Ntk4iOVw.png`,import.meta.url).href,Xy=new URL(`地面右端-CD3ZM8sP.png`,import.meta.url).href,Zy=new URL(`地面左端-BWLOFCIG.png`,import.meta.url).href,Qy=new URL(`壁-SFrhQN3T.png`,import.meta.url).href,$y=new URL(`扉-BG9nep7E.png`,import.meta.url).href,eb=new URL(`旗-DVw-pGvv.png`,import.meta.url).href,tb=new URL(`札-BmnT6-d8.png`,import.meta.url).href,nb=new URL(`札クリア-CAy9kkii.png`,import.meta.url).href,rb=new URL(`空-BoShLO8C.png`,import.meta.url).href,ib=new URL(`錠-Cid16t7d.png`,import.meta.url).href,ab=new URL(`鍵-BUg4jjct.png`,import.meta.url).href,ob=new URL(`雲中-Ds0hTbSP.png`,import.meta.url).href,sb=new URL(`雲大-C5yQJ-6u.png`,import.meta.url).href,cb=new URL(`雲小-hhtSCFHl.png`,import.meta.url).href,lb=new URL(`魚-BIcp8K5Y.png`,import.meta.url).href,ub=new URL(`クリア-C3vp8bcz.mp3`,import.meta.url).href,db=new URL(`曲-D19jjwT-.mp3`,import.meta.url).href,fb=mb(Object.assign({"../ゲーム/絵/ねこ右ジャンプ.png":Fy,"../ゲーム/絵/ねこ右歩き1.png":Iy,"../ゲーム/絵/ねこ右歩き2.png":Ly,"../ゲーム/絵/ねこ右立ち.png":Ry,"../ゲーム/絵/ねこ左ジャンプ.png":zy,"../ゲーム/絵/ねこ左歩き1.png":By,"../ゲーム/絵/ねこ左歩き2.png":Vy,"../ゲーム/絵/ねこ左立ち.png":Hy,"../ゲーム/絵/ねずみ歩き1.png":Uy,"../ゲーム/絵/ねずみ歩き2.png":Wy,"../ゲーム/絵/タイトル.png":Gy,"../ゲーム/絵/ボタン.png":Ky,"../ゲーム/絵/ボタン明るい.png":qy,"../ゲーム/絵/台.png":Jy,"../ゲーム/絵/地面.png":Yy,"../ゲーム/絵/地面右端.png":Xy,"../ゲーム/絵/地面左端.png":Zy,"../ゲーム/絵/壁.png":Qy,"../ゲーム/絵/扉.png":$y,"../ゲーム/絵/旗.png":eb,"../ゲーム/絵/札.png":tb,"../ゲーム/絵/札クリア.png":nb,"../ゲーム/絵/空.png":rb,"../ゲーム/絵/錠.png":ib,"../ゲーム/絵/鍵.png":ab,"../ゲーム/絵/雲中.png":ob,"../ゲーム/絵/雲大.png":sb,"../ゲーム/絵/雲小.png":cb,"../ゲーム/絵/魚.png":lb})),pb=mb(Object.assign({"../ゲーム/音/クリア.mp3":ub,"../ゲーム/音/曲.mp3":db}));function mb(e){return new Map(Object.entries(e).map(([e,t])=>[e.split(`/`).pop(),t]))}var hb=new Map;function gb(e){let t=hb.get(e);if(t instanceof HTMLImageElement)return t;if(!t){let t=fb.get(e);if(!t)return hb.set(e,`ない`),null;hb.set(e,`読み込み中`);let n=new Image;n.onload=()=>hb.set(e,n),n.onerror=()=>hb.set(e,`ない`),n.src=t}return null}var _b={bgm:.03,se:.03},vb=[];function yb(e){for(let t of vb.filter(e))t.audio.pause();vb=vb.filter(t=>!e(t))}function bb(){yb(()=>!0)}function xb(e,t){_b.bgm=Sb(e),_b.se=Sb(t);for(let e of vb)e.audio.volume=e.loop?_b.bgm:_b.se}function Sb(e){return Number.isFinite(e)?Math.min(1,Math.max(0,e)):0}function Cb(e){for(let t of e)if(t.kind===`鳴らす`||t.kind===`何度も`){let e=t.kind===`何度も`,n=pb.get(t.name);if(!n||e&&vb.some(e=>e.loop&&e.name===t.name))continue;let r=new Audio(n);r.loop=e,r.volume=e?_b.bgm:_b.se;let i={audio:r,name:t.name,scene:t.scene,loop:e};r.addEventListener(`ended`,()=>{vb=vb.filter(e=>e!==i)}),vb.push(i),r.play().catch(()=>{})}else t.kind===`止める`?bb():yb(e=>e.loop&&e.scene===t.scene)}var wb=`nekoto:セーブ`;function Tb(){return{cleared:[],texts:{},settings:null,unlockAll:!1,tutorialSeen:!1}}function Eb(e){try{let t=e.getItem(wb);if(!t)return Tb();let n=JSON.parse(t);return{cleared:Array.isArray(n.cleared)?n.cleared.filter(e=>typeof e==`string`):[],texts:n.texts&&typeof n.texts==`object`?n.texts:{},settings:typeof n.settings==`string`?n.settings:null,unlockAll:n.unlockAll===!0,tutorialSeen:n.tutorialSeen===!0}}catch{return Tb()}}function Db(e,t){try{return e.setItem(wb,JSON.stringify(t)),!0}catch{return!1}}function Ob(e){try{e.removeItem(wb)}catch{}}function kb(e,t,n){let r=e.texts[t];return r&&r.base===n?r.text:n}function Ab(e,t,n,r){r===n?delete e.texts[t]:e.texts[t]={base:n,text:r}}var jb=`# ステージ1：ジャンプ
+`).filter(e=>e.trim()===`# ▼ 変えられる`||e.trim()===`# ▲ ここまで`).length}var uy=L.transactionFilter.of(e=>{if(!e.docChanged)return e;let t=ay(e.startState.doc.toString()),n=!0;return e.changes.iterChanges((e,r)=>{oy(t,e,r)||(n=!1)}),n&&ly(e.newDoc.toString())!==ly(e.startState.doc.toString())&&(n=!1),n?e:[]}),dy=B.line({class:`nk-editable`}),fy=B.line({class:`nk-mark`}),py=B.line({class:`nk-locked`});function my(e){let t=new Ls,n=ay(e.doc.toString());for(let r=1;r<=e.doc.lines;r++){let i=e.doc.line(r),a=i.text.trim();a===`# ▼ 変えられる`||a===`# ▲ ここまで`?t.add(i.from,i.from,fy):n.some(e=>e.from<=i.from&&i.to<=e.end)?t.add(i.from,i.from,dy):t.add(i.from,i.from,py)}return t.finish()}var hy=Jo.define({create:my,update:(e,t)=>t.docChanged?my(t.state):e,provide:e=>G.decorations.from(e)}),gy=I.define(),_y={主語:`nk-subject`,対象:`nk-object`,相手:`nk-partner`,場所:`nk-place`,"数量・値":`nk-amount`,動作:`nk-action`,条件の印:`nk-condition`,コメント:`nk-comment`},vy=Jo.define({create:()=>B.none,update(e,t){let n=e.map(t.changes);for(let e of t.effects)e.is(gy)&&(n=B.set(e.value,!0));return n},provide:e=>G.decorations.from(e)});function yy(e){let t=e.state.doc.toString(),n=La(t);if(!n)return;let r=n.filter(e=>e.start<e.end&&e.end<=t.length&&_y[e.kind]).map(e=>B.mark({class:_y[e.kind]}).range(e.start,e.end));e.dispatch({effects:gy.of(r)})}var by=G.theme({"&":{height:`100%`,fontSize:`var(--editor-font-size)`,backgroundColor:`var(--editor-background)`,color:`var(--ui-text)`},".cm-scroller":{fontFamily:`"BIZ UDGothic", "Cascadia Mono", "MS Gothic", monospace`,lineHeight:`1.65`},".cm-content":{padding:`10px 0`,caretColor:`var(--editor-caret)`},".cm-cursor":{borderLeftColor:`var(--editor-caret)`,borderLeftWidth:`2px`},".cm-gutters":{backgroundColor:`var(--editor-background)`,color:`var(--editor-gutter)`,border:`none`},".cm-lineNumbers .cm-gutterElement":{padding:`0 10px 0 14px`},".cm-activeLine":{backgroundColor:`var(--editor-active-line)`},".cm-activeLineGutter":{backgroundColor:`transparent`,color:`var(--ui-text)`},"&.cm-focused .cm-selectionBackground, .cm-selectionBackground":{backgroundColor:`var(--ui-selected) !important`},".nk-locked":{opacity:.55},".nk-editable":{backgroundColor:`color-mix(in srgb, var(--ui-highlight) 12%, transparent)`,boxShadow:`inset 3px 0 0 var(--ui-highlight)`},".nk-mark":{backgroundColor:`color-mix(in srgb, var(--ui-highlight) 22%, transparent)`,boxShadow:`inset 3px 0 0 var(--ui-highlight)`},".nk-mark .nk-comment":{color:`var(--ui-highlight)`,fontStyle:`normal`,fontWeight:`bold`},".nk-pen":{color:`var(--ui-highlight)`,padding:`0 4px`},".nk-subject":{color:`var(--role-subject)`},".nk-object":{color:`var(--role-object)`},".nk-partner":{color:`var(--role-partner)`},".nk-place":{color:`var(--role-place)`},".nk-amount":{color:`var(--role-amount)`},".nk-action":{color:`var(--role-action)`},".nk-condition":{fontWeight:`bold`,backgroundColor:`var(--ui-tint)`,borderRadius:`3px`},".nk-comment":{color:`var(--editor-comment)`,fontStyle:`italic`},".nk-folded":{marginLeft:`10px`,padding:`0 8px`,borderRadius:`999px`,fontSize:`0.85em`,color:`var(--ui-text-muted)`,backgroundColor:`var(--ui-hover)`,border:`1px solid var(--ui-border)`,cursor:`pointer`},".nk-fold-mark":{color:`var(--editor-gutter)`,cursor:`pointer`,padding:`0 2px`}}),xy=new class extends Up{toDOM(){let e=document.createElement(`span`);return e.className=`nk-pen`,e.textContent=`✏`,e}},Sy=Jp({class:`nk-pen-gutter`,markers(e){let t=new Ls,n=ay(e.state.doc.toString());for(let r=1;r<=e.state.doc.lines;r++){let i=e.state.doc.line(r);n.some(e=>e.from<=i.from&&i.to<=e.end)&&t.add(i.from,i.from,xy)}return t.finish()},initialSpacer:()=>xy}),Cy=Kh.of((e,t,n)=>{let r=sy(e.doc.toString()).find(e=>e.from===n);return r&&t<=r.from?{from:r.from,to:r.to}:null}),wy=og({preparePlaceholder:(e,t)=>e.doc.lineAt(t.to).number-e.doc.lineAt(t.from).number,placeholderDOM(e,t,n){let r=document.createElement(`span`);return r.className=`nk-folded`,r.textContent=`🔒 ${n}行`,r.title=`押すと開く（書き換えられない行）`,r.onclick=t,r}}),Ty=fg({markerDOM(e){let t=document.createElement(`span`);return t.className=`nk-fold-mark`,t.textContent=e?`▾`:`▸`,t}}),Ey=Jo.define({create:e=>cy(e.doc.toString()),update(e,t){return t.docChanged?e.map(e=>({from:t.changes.mapPos(e.from,-1),to:t.changes.mapPos(e.to,1)})):e}}),Dy=L.transactionFilter.of(e=>{if(!e.docChanged)return e;let t=e.startState.field(Ey),n=!0;return e.changes.iterChanges((e,r,i,a,o)=>{(!t.some(t=>t.from<=e&&r<=t.to)||/[\n\t]/.test(o.toString()))&&(n=!1)}),n?e:[]}),Oy=G.decorations.compute([Ey],e=>B.set(e.field(Ey).filter(e=>e.from<e.to).map(e=>B.mark({class:`nk-value`}).range(e.from,e.to)),!0)),ky=G.theme({".nk-value":{padding:`1px 6px`,borderRadius:`6px`,backgroundColor:`color-mix(in srgb, var(--ui-highlight) 18%, transparent)`,border:`1px solid var(--ui-highlight)`}});function Ay(e){return({state:t,dispatch:n})=>{let r=t.field(Ey,!1)??[];if(r.length===0)return!0;let i=t.selection.main.head,a=r.filter(e=>e.to<i).length-1,o=e?r.findIndex(e=>e.from>i):a,s=o===-1?r[e?0:r.length-1]:r[o];return n(t.update({selection:P.range(s.from,s.to),scrollIntoView:!0})),!0}}var jy=Zo.highest(hp.of([{key:`Enter`,run:ey},{key:`Tab`,run:ny,shift:ry},{key:`Mod-/`,run:iy}])),My=Zo.highest(hp.of([{key:`Tab`,run:Ay(!0),shift:Ay(!1)},{key:`Enter`,run:()=>!0}])),Ny=G.contentAttributes.of({style:`tab-size: 2em`});function Py(e,t,n=`ステージ`){let r=n===`ステージ`?[Ty,Sy,Cy,wy,uy,hy,jy]:[Ey,Dy,Oy,ky,My],i=[um(),...r,Bp(),mm(),Np(),Gg(),jh.of(`	`),L.tabSize.of(4),Ny,hp.of([...Qv,...u_]),vy,by,G.updateListener.of(e=>{e.docChanged&&(yy(e.view),t())})],a=new G({parent:e,state:L.create({doc:``,extensions:i})});return{load(e){if(a.setState(L.create({doc:e,extensions:i})),yy(a),n!==`ステージ`)return;let t=ay(e)[0];a.dispatch({effects:[...sy(e).map(e=>Qh.of({from:e.from,to:e.to})),...t?[G.scrollIntoView(t.from,{y:`center`})]:[]],selection:t?{anchor:t.from}:void 0})},text:()=>a.state.doc.toString(),composing:()=>a.composing,goTo(e){let t=Math.min(e,a.state.doc.length);a.dispatch({selection:{anchor:t},scrollIntoView:!0}),a.focus()}}}function Fy(e){return e instanceof vt?e.all.map(e=>({message:e.message,at:e.start})):e instanceof E||e instanceof b?[{message:e.message,at:e.start}]:[{message:e instanceof Error?e.message:String(e),at:null}]}function Iy(e,t){return e.slice(0,t).split(`
+`).length}var Ly=new URL(`ねこ右ジャンプ-D-tegsyp.png`,import.meta.url).href,Ry=new URL(`ねこ右歩き1-DFeRQjxO.png`,import.meta.url).href,zy=new URL(`ねこ右歩き2-C9j3ZjY4.png`,import.meta.url).href,By=new URL(`ねこ右立ち-yVSSotMM.png`,import.meta.url).href,Vy=new URL(`ねこ左ジャンプ-Cf2QTqL4.png`,import.meta.url).href,Hy=new URL(`ねこ左歩き1-CbTo1o9j.png`,import.meta.url).href,Uy=new URL(`ねこ左歩き2-DzvWM6uP.png`,import.meta.url).href,Wy=new URL(`ねこ左立ち-B4dzWgiV.png`,import.meta.url).href,Gy=new URL(`ねずみ歩き1-CkXy_47m.png`,import.meta.url).href,Ky=new URL(`ねずみ歩き2-DZSysLWR.png`,import.meta.url).href,qy=new URL(`タイトル-IfPuDTDj.png`,import.meta.url).href,Jy=new URL(`ボタン-DSbPDDrh.png`,import.meta.url).href,Yy=new URL(`ボタン明るい-BeaHbUPi.png`,import.meta.url).href,Xy=new URL(`台-D5TuT__M.png`,import.meta.url).href,Zy=new URL(`地面-Ntk4iOVw.png`,import.meta.url).href,Qy=new URL(`地面右端-CD3ZM8sP.png`,import.meta.url).href,$y=new URL(`地面左端-BWLOFCIG.png`,import.meta.url).href,eb=new URL(`壁-SFrhQN3T.png`,import.meta.url).href,tb=new URL(`扉-BG9nep7E.png`,import.meta.url).href,nb=new URL(`旗-DVw-pGvv.png`,import.meta.url).href,rb=new URL(`札-BmnT6-d8.png`,import.meta.url).href,ib=new URL(`札クリア-CAy9kkii.png`,import.meta.url).href,ab=new URL(`空-BoShLO8C.png`,import.meta.url).href,ob=new URL(`錠-Cid16t7d.png`,import.meta.url).href,sb=new URL(`鍵-BUg4jjct.png`,import.meta.url).href,cb=new URL(`雲中-Ds0hTbSP.png`,import.meta.url).href,lb=new URL(`雲大-C5yQJ-6u.png`,import.meta.url).href,ub=new URL(`雲小-hhtSCFHl.png`,import.meta.url).href,db=new URL(`魚-BIcp8K5Y.png`,import.meta.url).href,fb=new URL(`クリア-C3vp8bcz.mp3`,import.meta.url).href,pb=new URL(`曲-D19jjwT-.mp3`,import.meta.url).href,mb=gb(Object.assign({"../ゲーム/絵/ねこ右ジャンプ.png":Ly,"../ゲーム/絵/ねこ右歩き1.png":Ry,"../ゲーム/絵/ねこ右歩き2.png":zy,"../ゲーム/絵/ねこ右立ち.png":By,"../ゲーム/絵/ねこ左ジャンプ.png":Vy,"../ゲーム/絵/ねこ左歩き1.png":Hy,"../ゲーム/絵/ねこ左歩き2.png":Uy,"../ゲーム/絵/ねこ左立ち.png":Wy,"../ゲーム/絵/ねずみ歩き1.png":Gy,"../ゲーム/絵/ねずみ歩き2.png":Ky,"../ゲーム/絵/タイトル.png":qy,"../ゲーム/絵/ボタン.png":Jy,"../ゲーム/絵/ボタン明るい.png":Yy,"../ゲーム/絵/台.png":Xy,"../ゲーム/絵/地面.png":Zy,"../ゲーム/絵/地面右端.png":Qy,"../ゲーム/絵/地面左端.png":$y,"../ゲーム/絵/壁.png":eb,"../ゲーム/絵/扉.png":tb,"../ゲーム/絵/旗.png":nb,"../ゲーム/絵/札.png":rb,"../ゲーム/絵/札クリア.png":ib,"../ゲーム/絵/空.png":ab,"../ゲーム/絵/錠.png":ob,"../ゲーム/絵/鍵.png":sb,"../ゲーム/絵/雲中.png":cb,"../ゲーム/絵/雲大.png":lb,"../ゲーム/絵/雲小.png":ub,"../ゲーム/絵/魚.png":db})),hb=gb(Object.assign({"../ゲーム/音/クリア.mp3":fb,"../ゲーム/音/曲.mp3":pb}));function gb(e){return new Map(Object.entries(e).map(([e,t])=>[e.split(`/`).pop(),t]))}var _b=new Map;function vb(e){let t=_b.get(e);if(t instanceof HTMLImageElement)return t;if(!t){let t=mb.get(e);if(!t)return _b.set(e,`ない`),null;_b.set(e,`読み込み中`);let n=new Image;n.onload=()=>_b.set(e,n),n.onerror=()=>_b.set(e,`ない`),n.src=t}return null}var yb={bgm:.03,se:.03},bb=[];function xb(e){for(let t of bb.filter(e))t.audio.pause();bb=bb.filter(t=>!e(t))}function Sb(){xb(()=>!0)}function Cb(e,t){yb.bgm=wb(e),yb.se=wb(t);for(let e of bb)e.audio.volume=e.loop?yb.bgm:yb.se}function wb(e){return Number.isFinite(e)?Math.min(1,Math.max(0,e)):0}function Tb(e){for(let t of e)if(t.kind===`鳴らす`||t.kind===`何度も`){let e=t.kind===`何度も`,n=hb.get(t.name);if(!n||e&&bb.some(e=>e.loop&&e.name===t.name))continue;let r=new Audio(n);r.loop=e,r.volume=e?yb.bgm:yb.se;let i={audio:r,name:t.name,scene:t.scene,loop:e};r.addEventListener(`ended`,()=>{bb=bb.filter(e=>e!==i)}),bb.push(i),r.play().catch(()=>{})}else t.kind===`止める`?Sb():xb(e=>e.loop&&e.scene===t.scene)}var Eb=`nekoto:セーブ`;function Db(){return{cleared:[],texts:{},settings:null,unlockAll:!1,tutorialSeen:!1}}function Ob(e){try{let t=e.getItem(Eb);if(!t)return Db();let n=JSON.parse(t);return{cleared:Array.isArray(n.cleared)?n.cleared.filter(e=>typeof e==`string`):[],texts:n.texts&&typeof n.texts==`object`?n.texts:{},settings:typeof n.settings==`string`?n.settings:null,unlockAll:n.unlockAll===!0,tutorialSeen:n.tutorialSeen===!0}}catch{return Db()}}function kb(e,t){try{return e.setItem(Eb,JSON.stringify(t)),!0}catch{return!1}}function Ab(e){try{e.removeItem(Eb)}catch{}}function jb(e,t,n){let r=e.texts[t];return r&&r.base===n?r.text:n}function Mb(e,t,n,r){r===n?delete e.texts[t]:e.texts[t]={base:n,text:r}}var Nb=`# ステージ1：ジャンプ
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 高い壁があって越えられない。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -131,7 +132,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Mb=`# ステージ2：向き
+`,Pb=`# ステージ2：向き
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 右キーを押しても、旗のほうへ進まない。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -249,7 +250,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Nb=`# ステージ3：速さ
+`,Fb=`# ステージ3：速さ
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 穴が広くて跳び越えられない。落ちると、はじめの場所に戻る。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -373,7 +374,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Pb=`# ステージ4：台
+`,Ib=`# ステージ4：台
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 旗は高い壁の上。浮いている台を使いたいけれど、ねこは台をすり抜けてしまう。
 # ここからは、2か所以上書き換えないとクリアできない。
@@ -510,7 +511,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Fb=`# ステージ5：ねずみ
+`,Lb=`# ステージ5：ねずみ
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # ねずみに触れると、はじめの場所に戻されてしまう。その先には高い壁も。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -646,7 +647,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Ib=`# ステージ6：壁と穴
+`,Rb=`# ステージ6：壁と穴
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 高い壁のあとに、広い穴。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -774,7 +775,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Lb=`# ステージ7：がけ
+`,zb=`# ステージ7：がけ
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 右キーで左へ行ってしまう。旗は高いがけの上。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -898,7 +899,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Rb=`# ステージ8：鍵と扉
+`,Bb=`# ステージ8：鍵と扉
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 扉が閉まっていて通れない。高いところに鍵がある。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -1024,7 +1025,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,zb=`# ステージ9：重い世界
+`,Vb=`# ステージ9：重い世界
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 重力が強くて、穴を跳び越えられない。ねずみもいるし、高い壁もある。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -1170,7 +1171,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Bb=`# ステージ10：総まとめ
+`,Hb=`# ステージ10：総まとめ
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # ここまでの全部。右キーで左へ行くし、ジャンプは低いし、ねずみもいるし、穴も広い。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -1316,7 +1317,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Vb=`# ステージ11：トゲの天井
+`,Ub=`# ステージ11：トゲの天井
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # ここからは、むずかしいステージ。天井にトゲがあって、高く跳びすぎると戻される。
 # その先には、広い穴。
@@ -1453,7 +1454,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Hb=`# ステージ12：せまいトンネル
+`,Wb=`# ステージ12：せまいトンネル
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # トンネルの天井が低くて、ねこが入れない。トンネルの上は、トゲまでふさがっている。
 # トンネルの中には、ねずみもいる。
@@ -1615,7 +1616,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Ub=`# ステージ13：スイッチの橋
+`,Gb=`# ステージ13：スイッチの橋
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # とても広い穴。手前のスイッチを踏むと、橋が出るらしい……けれど、出る場所がおかしい。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -1769,7 +1770,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Wb=`# ステージ14：エレベーター
+`,Kb=`# ステージ14：エレベーター
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 旗は高いがけの上。がけの手前にはトゲがあって、跳んでは登れない。
 # エレベーターがあるけれど、乗っても動かないし、上まで行かない。
@@ -1950,7 +1951,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Gb=`# ステージ15：魚あつめ
+`,qb=`# ステージ15：魚あつめ
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 魚を集めると、旗の前の扉が開く。でも、魚の数え方がおかしいし、1匹はトゲの近くにいる。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -2106,7 +2107,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Kb=`# ステージ16：向かい風
+`,Jb=`# ステージ16：向かい風
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 強い向かい風で、前に進めない。ねずみもやってくる。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -2256,7 +2257,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,qb=`# ステージ17：落ちてくる岩
+`,Yb=`# ステージ17：落ちてくる岩
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 空から岩が次々落ちてくる。当たると戻される。その先には、広い穴。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -2405,7 +2406,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Jb=`# ステージ18：見えない床
+`,Xb=`# ステージ18：見えない床
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # とても広い穴の上に、空と同じ色の床が浮いている。見えないし、乗れない。ねずみもいる。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -2567,7 +2568,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Yb=`# ステージ19：さかさま
+`,Zb=`# ステージ19：さかさま
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # 重力が上向きで、ねこがトゲの天井へ落ちていく。しかも5秒ごとに、はじめの場所に戻される。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -2698,7 +2699,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Xb=`# ステージ20：総まとめ2
+`,Qb=`# ステージ20：総まとめ2
 # ねこを旗まで連れていこう。左右キーで歩き、スペースでジャンプ。
 # さいごのステージ。トゲ・せまいトンネル・ねずみ・時間。ここまでの全部を思い出そう。
 # ✏ の付いた行は、自由に書き換えてよい。答えは1つじゃない。
@@ -2864,7 +2865,7 @@
 # ▼ 変えられる
 
 # ▲ ここまで
-`,Zb=`# ねこと のメニュー（タイトルとステージ選択）
+`,$b=`# ねこと のメニュー（タイトルとステージ選択）
 # ねこと（アプリ）とは、次の名前でやり取りする。
 #   画面の幅   … アプリが入れる（見えている横の長さ。窓に合わせて変わる）
 #   ステージ名 … アプリが入れる（ステージの名前の並び）
@@ -2934,8 +2935,7 @@
 旗 は 横 0 縦 80 に いる。
 ずっと：
 	真ん中 を 画面の幅 / 2 に する。
-	ねこ を 横 40 縦 80 に 動かす。
-	旗 を 横 (画面の幅 - 120) 縦 80 に 動かす。
+# 飾りのねこと旗は、タイトルの場面だけで見せる（ステージ選択では、札の後ろにはみ出すので、画面の外へ）。
 
 # ボタン（台の絵の上に、言葉を書く）
 ボタン台 という 四角 を 作る。
@@ -2984,6 +2984,8 @@
 	えらぶボタン は 横 250 縦 90 に いる。
 	せっていボタン は 横 250 縦 20 に いる。
 	ずっと：
+		ねこ を 横 40 縦 80 に 動かす。
+		旗 を 横 (画面の幅 - 120) 縦 80 に 動かす。
 		ロゴ を 横 (真ん中 - 240) 縦 270 に 動かす。
 		副題 を 横 (真ん中 - (副題 の 幅) / 2) 縦 240 に 動かす。
 		はじめボタン を 横 (真ん中 - 150) 縦 160 に 動かす。
@@ -3034,8 +3036,8 @@
 ステージ選択 という 場面 を 作る：
 	見出し は 横 400 縦 395 に いる。
 	もどるボタン は 横 250 縦 10 に いる。
-	次へボタン は 横 -500 縦 200 に いる。
-	前へボタン は 横 -500 縦 200 に いる。
+	次へボタン は 横 5000 縦 200 に いる。
+	前へボタン は 横 5000 縦 200 に いる。
 	# 今のページの10枚だけ並べる（1ページに5枚ずつ2段）。
 	番 を 0 に する。
 	並べた を 0 に する。
@@ -3068,19 +3070,21 @@
 		ページ を ページ - 1 に する。
 		ステージ選択 に 切り替える。
 	ずっと：
+		ねこ を 横 5000 縦 80 に 動かす。
+		旗 を 横 5000 縦 80 に 動かす。
 		見出し を 横 (真ん中 - (見出し の 幅) / 2) 縦 395 に 動かす。
 		もどるボタン を 横 (真ん中 - 150) 縦 10 に 動かす。
 		(真ん中 - 150) に 10 から 光らせる。
 		もどるボタン の 絵 を 「ボタン.png」 に する。
 		乗っている なら、もどるボタン の 絵 を 「ボタン明るい.png」 に する。
-		# 次のページは、ひらけたページまで。前のページは、2ページ目から。見せないときは画面の外へ。
-		次へボタン を 横 -500 縦 200 に 動かす。
+		# 次のページは、ひらけたページまで。前のページは、2ページ目から。見せないときは画面の右の外へ（左の外に出たものは片付けられて消えるため）。
+		次へボタン を 横 5000 縦 200 に 動かす。
 		ページ < ひらけたページ なら、次へボタン を 横 (真ん中 + 380) 縦 200 に 動かす。
-		前へボタン を 横 -500 縦 200 に 動かす。
+		前へボタン を 横 5000 縦 200 に 動かす。
 		ページ > 1 なら、前へボタン を 横 (真ん中 - 444) 縦 200 に 動かす。
 
 タイトル を 始める。
-`,Qb=`# せってい
+`,ex=`# せってい
 # 枠の中（数と、テーマの名前）を書き換えられる。書き換えると、すぐ変わる。
 
 # 見た目
@@ -3091,8 +3095,6 @@
 # 音の大きさ（0〜100）
 音楽 の 音量 を 3 に する。
 効果音 の 音量 を 3 に する。
-`,X=Object.entries(Object.assign({"../ゲーム/ステージ/01_ジャンプ.wokoto":jb,"../ゲーム/ステージ/02_向き.wokoto":Mb,"../ゲーム/ステージ/03_速さ.wokoto":Nb,"../ゲーム/ステージ/04_台.wokoto":Pb,"../ゲーム/ステージ/05_ねずみ.wokoto":Fb,"../ゲーム/ステージ/06_壁と穴.wokoto":Ib,"../ゲーム/ステージ/07_がけ.wokoto":Lb,"../ゲーム/ステージ/08_鍵と扉.wokoto":Rb,"../ゲーム/ステージ/09_重い世界.wokoto":zb,"../ゲーム/ステージ/10_総まとめ.wokoto":Bb,"../ゲーム/ステージ/11_トゲの天井.wokoto":Vb,"../ゲーム/ステージ/12_せまいトンネル.wokoto":Hb,"../ゲーム/ステージ/13_スイッチの橋.wokoto":Ub,"../ゲーム/ステージ/14_エレベーター.wokoto":Wb,"../ゲーム/ステージ/15_魚あつめ.wokoto":Gb,"../ゲーム/ステージ/16_向かい風.wokoto":Kb,"../ゲーム/ステージ/17_落ちてくる岩.wokoto":qb,"../ゲーム/ステージ/18_見えない床.wokoto":Jb,"../ゲーム/ステージ/19_さかさま.wokoto":Yb,"../ゲーム/ステージ/20_総まとめ2.wokoto":Xb})).map(([e,t])=>{let n=e.split(`/`).pop();return{file:n,title:$b(n),...ex(t)}}).sort((e,t)=>e.file.localeCompare(t.file,`ja`));function $b(e){return e.replace(/\.wokoto$/,``).replace(/^\d+_/,``)}function ex(e){let t=[],n=[];for(let r of e.split(`
+`,X=Object.entries(Object.assign({"../ゲーム/ステージ/01_ジャンプ.wokoto":Nb,"../ゲーム/ステージ/02_向き.wokoto":Pb,"../ゲーム/ステージ/03_速さ.wokoto":Fb,"../ゲーム/ステージ/04_台.wokoto":Ib,"../ゲーム/ステージ/05_ねずみ.wokoto":Lb,"../ゲーム/ステージ/06_壁と穴.wokoto":Rb,"../ゲーム/ステージ/07_がけ.wokoto":zb,"../ゲーム/ステージ/08_鍵と扉.wokoto":Bb,"../ゲーム/ステージ/09_重い世界.wokoto":Vb,"../ゲーム/ステージ/10_総まとめ.wokoto":Hb,"../ゲーム/ステージ/11_トゲの天井.wokoto":Ub,"../ゲーム/ステージ/12_せまいトンネル.wokoto":Wb,"../ゲーム/ステージ/13_スイッチの橋.wokoto":Gb,"../ゲーム/ステージ/14_エレベーター.wokoto":Kb,"../ゲーム/ステージ/15_魚あつめ.wokoto":qb,"../ゲーム/ステージ/16_向かい風.wokoto":Jb,"../ゲーム/ステージ/17_落ちてくる岩.wokoto":Yb,"../ゲーム/ステージ/18_見えない床.wokoto":Xb,"../ゲーム/ステージ/19_さかさま.wokoto":Zb,"../ゲーム/ステージ/20_総まとめ2.wokoto":Qb})).map(([e,t])=>{let n=e.split(`/`).pop();return{file:n,title:tx(n),...nx(t)}}).sort((e,t)=>e.file.localeCompare(t.file,`ja`));function tx(e){return e.replace(/\.wokoto$/,``).replace(/^\d+_/,``)}function nx(e){let t=[],n=[];for(let r of e.split(`
 `)){let e=/^#\s*ヒント(\d+)[：:]\s*(.*)$/.exec(r.trim());e?t.push({order:Number(e[1]),text:e[2]}):n.push(r)}return{text:n.join(`
-`),hints:t.sort((e,t)=>e.order-t.order).map(e=>e.text)}}function tx(e,t,n=!1){return n||e===0||t.has(e)||t.has(e-1)}function nx(){return Math.max(1,Math.ceil(X.length/10))}function rx(e,t=!1){if(t)return nx();let n=1;for(;n<nx();){let t=(n-1)*10;if(!X.slice(t,t+10).every((n,r)=>e.has(t+r)))break;n+=1}return n}var ix=Object.assign({"../ゲーム/画面/メニュー.wokoto":Zb,"../ゲーム/画面/設定.wokoto":Qb}),ax=ix[`../ゲーム/画面/メニュー.wokoto`]??``;function ox(e,t,n=!1){if(e===0){let e=X.findIndex((e,n)=>!t.has(n));return e===-1?X.length-1:e}return typeof e==`number`&&Number.isInteger(e)&&e>=1&&e<=X.length&&tx(e-1,t,n)?e-1:null}var sx=ix[`../ゲーム/画面/設定.wokoto`]??``,cx=(()=>{try{return window.localStorage}catch{return null}})(),Z=cx?Eb(cx):Tb();function lx(){return cx?Db(cx,Z):!1}var Q=document.querySelector(`#game`),ux=document.querySelector(`#start`),dx=document.querySelector(`#file-name`),fx=document.querySelector(`#tab`),px=document.querySelector(`#problems`),mx=document.querySelector(`#status-problems`),hx=document.querySelector(`#status-stage`),gx=document.querySelector(`#reset`),_x=document.querySelector(`#cleared`),vx=document.querySelector(`#menu`),yx=document.querySelector(`#next`),bx=Q.getContext(`2d`),xx=document.querySelector(`#settings`),Sx=document.querySelector(`#settings-problems`),Cx=Z.settings??sx,wx=!1;function Tx(e){for(let[t,n]of Object.entries($a(e)))document.documentElement.style.setProperty(t,n);xb(e.musicVolume/100,e.soundVolume/100)}function Ex(e){try{Tx(eo(e)),Cx=e,Sx.hidden=!0;let t=e===sx?null:e;Z.settings!==t&&(Z.settings=t,lx())}catch(t){let n=t instanceof vt?t.all:t instanceof E?[t]:[],r=t=>e.slice(0,t).split(`
-`).length;Sx.replaceChildren(...(n.length>0?n.map(e=>`${r(e.start)}行目：${e.message}`):[String(t)]).map(e=>{let t=document.createElement(`li`);return t.textContent=e,t})),Sx.hidden=!1}}Ex(Cx);var Dx,Ox=Py(document.querySelector(`#settings-code`),()=>{window.clearTimeout(Dx),Dx=window.setTimeout(function e(){Ox.composing()?Dx=window.setTimeout(e,300):Ex(Ox.text())},300)},`設定`);function kx(){wx=!0,xx.hidden=!1,Ox.load(Cx)}function Ax(){window.clearTimeout(Dx),Ex(Ox.text()),wx=!1,xx.hidden=!0,Q.focus()}document.querySelector(`#close-settings`).addEventListener(`click`,Ax),document.querySelector(`#open-settings`).addEventListener(`click`,kx);var jx=document.querySelector(`#save-note`),Mx;function Nx(e){jx.textContent=e,window.clearTimeout(Mx),Mx=window.setTimeout(()=>jx.textContent=``,2500)}document.querySelector(`#save-now`).addEventListener(`click`,()=>{window.clearTimeout(Dx),Ex(Ox.text()),Nx(lx()?`セーブしました`:`セーブできませんでした（このブラウザでは残せません）`)});var Px=document.querySelector(`#unlock-all`);function Fx(){Px.textContent=Z.unlockAll?`🔒 順番にひらく`:`🔓 全部ひらく`}Fx(),Px.addEventListener(`click`,()=>{Z.unlockAll=!Z.unlockAll,lx(),Fx(),Nx(Z.unlockAll?`全部のステージを遊べるようにしました`:`前のステージをクリアするまで、選べないようにしました`),Hx===`メニュー`&&Xx()}),document.querySelector(`#erase-save`).addEventListener(`click`,()=>{window.confirm(`クリアした記録・書き換えた文・設定を、全部消してはじめに戻しますか？（元に戻せません）`)&&(cx&&Ob(cx),Object.assign(Z,Tb()),Ux.clear(),Fx(),Ox.load(sx),Ex(sx),Hx===`ステージ`?Yx(zx):Xx(),Nx(`セーブを消しました`))});var Ix=1;function Lx(e){let t=Q.parentElement.getBoundingClientRect(),n=Q.getBoundingClientRect().height||t.height,r=e.screen.height,i=Math.max(1,Math.min(Math.round(r*t.width/n),e.world.width));e.screen.width!==i&&(e.screen={width:i,height:r}),Ix=Math.max(1,n*(window.devicePixelRatio||1)/r);let a=Math.round(i*Ix),o=Math.round(r*Ix);(Q.width!==a||Q.height!==o)&&(Q.width=a,Q.height=o)}var $=null,Rx=``,zx=0,Bx=!1,Vx=!1,Hx=`メニュー`,Ux=new Set(X.flatMap((e,t)=>Z.cleared.includes(e.file)?[t]:[]));function Wx(e,t){let n=t instanceof vt?t.all:t instanceof E?[t]:[],r=t=>e.slice(0,t).split(`
-`).length;px.replaceChildren();let i=n.length>0?n.map(e=>({text:e.message,at:e.start})):[{text:String(t),at:null}];for(let e of i){let t=document.createElement(`li`);if(t.textContent=e.text,e.at!==null){let n=document.createElement(`span`);n.className=`line`,n.textContent=`${r(e.at)}行目`,t.append(n),t.addEventListener(`click`,()=>Jx.goTo(e.at))}px.append(t)}px.hidden=!1,mx.textContent=`✖ 問題 ${i.length}`,mx.classList.add(`bad`)}function Gx(){px.hidden=!0,px.replaceChildren(),mx.textContent=`✔ 問題なし`,mx.classList.remove(`bad`)}function Kx(e){try{$=zi(Cn(he(He(e),e))),Rx=e,Bx=!1,_x.hidden=!0,Gx(),bb(),Vx&&Cb($.sounds.splice(0))}catch(t){Wx(e,t)}}var qx,Jx=Py(document.querySelector(`#code`),()=>{window.clearTimeout(qx),qx=window.setTimeout(function e(){Jx.composing()?qx=window.setTimeout(e,300):(Kx(Jx.text()),Ab(Z,X[zx].file,X[zx].text,Jx.text()),lx())},300),fx.classList.toggle(`changed`,Jx.text()!==X[zx].text)});function Yx(e){(e!==zx||Hx!==`ステージ`)&&(dS=0,cS.hidden=!0),zx=e;let t=X[e],n=kb(Z,t.file,t.text);dx.textContent=t.file,hx.textContent=`ステージ ${e+1} / ${X.length}：${t.title}`,fx.classList.toggle(`changed`,n!==t.text),yx.textContent=e+1<X.length?`つぎのステージへ ▶`:`メニューへ ▶`,Hx=`ステージ`,document.body.classList.remove(`menu`),Jx.load(n),Kx(n),!Z.tutorialSeen&&!iS&&oS()}function Xx(){Hx=`メニュー`,document.body.classList.add(`menu`),Kx(ax),$?.variables.set(`ステージ名`,X.map(e=>e.title)),$?.variables.set(`クリアした`,X.map((e,t)=>Ux.has(t))),$?.variables.set(`遊べる`,X.map((e,t)=>tx(t,Ux,Z.unlockAll)));let e=rx(Ux,Z.unlockAll);$?.variables.set(`ページ数`,nx()),$?.variables.set(`ひらけたページ`,e),$?.variables.set(`ページ`,Math.min(Math.floor(zx/10)+1,e))}function Zx(e){e.variables.set(`画面の幅`,e.screen.width);let t=e.variables.get(`遊ぶ`);if(t!=null){e.variables.set(`遊ぶ`,null);let n=ox(t,Ux,Z.unlockAll);n!==null&&(Yx(n),Q.focus())}e.variables.get(`設定を開く`)===!0&&(e.variables.set(`設定を開く`,!1),kx())}var Qx=document.querySelector(`#tutorial`),$x=[...Qx.querySelectorAll(`.page`)],eS=document.querySelector(`#tutorial-page`),tS=document.querySelector(`#tutorial-back`),nS=document.querySelector(`#tutorial-next`),rS=0,iS=!1;function aS(e){rS=e,$x.forEach((t,n)=>t.hidden=n!==e),eS.textContent=`${e+1} / ${$x.length}`,tS.hidden=e===0,nS.textContent=e+1<$x.length?`つぎへ ▶`:`はじめる ▶`}function oS(){iS=!0,Qx.hidden=!1,aS(0),nS.focus()}function sS(){iS=!1,Qx.hidden=!0,Z.tutorialSeen||(Z.tutorialSeen=!0,lx()),Q.focus()}tS.addEventListener(`click`,()=>aS(Math.max(0,rS-1))),nS.addEventListener(`click`,()=>{rS+1<$x.length?aS(rS+1):sS()}),document.querySelector(`#open-tutorial`).addEventListener(`click`,oS);var cS=document.querySelector(`#hint-panel`),lS=document.querySelector(`#hint-list`),uS=document.querySelector(`#hint-more`),dS=0;function fS(){let e=X[zx].hints;lS.replaceChildren(...e.slice(0,dS).map(e=>{let t=document.createElement(`li`);return t.textContent=e,t})),cS.hidden=dS===0,uS.hidden=dS>=e.length}function pS(){let e=X[zx].hints;e.length===0?(lS.replaceChildren(Object.assign(document.createElement(`li`),{textContent:`このステージには、ヒントがありません。`})),cS.hidden=!1,uS.hidden=!0):(dS=Math.min(dS+1,e.length),fS())}document.querySelector(`#hint`).addEventListener(`click`,pS),uS.addEventListener(`click`,pS),document.querySelector(`#hint-close`).addEventListener(`click`,()=>{cS.hidden=!0}),gx.addEventListener(`click`,()=>{let e=X[zx];(Jx.text()===e.text||window.confirm(`書き換えた文を消して、はじめの文に戻しますか？`))&&(window.clearTimeout(qx),Ab(Z,e.file,e.text,e.text),lx(),Yx(zx),Q.focus())}),yx.addEventListener(`click`,()=>{zx+1<X.length?Yx(zx+1):Xx(),Q.focus()}),vx.addEventListener(`click`,()=>{Xx(),Q.focus()}),Xx();var mS=new Set,hS=new Set,gS=[],_S,vS=`マウス`;function yS(e){let t=Q.getBoundingClientRect(),n=$?.screen??{width:Q.width,height:Q.height};return{x:(e.clientX-t.left)*n.width/t.width,y:(e.clientY-t.top)*n.height/t.height}}Q.addEventListener(`pointermove`,e=>{_S=yS(e)}),Q.addEventListener(`pointerdown`,e=>{let t=yS(e);_S=t,gS.push(t),mS.add(vS),hS.add(vS)}),window.addEventListener(`pointerup`,()=>mS.delete(vS));var bS=e=>e.target instanceof Element&&e.target.closest(`#code, #settings`)!==null;window.addEventListener(`keydown`,e=>{if(iS){e.key===`ArrowRight`||e.key===`Enter`?nS.click():e.key===`ArrowLeft`?aS(Math.max(0,rS-1)):e.key===`Escape`&&sS(),e.preventDefault();return}if(e.key===`Escape`&&!e.isComposing&&e.target instanceof Element&&e.target.closest(`#code`)){e.preventDefault(),document.activeElement?.blur(),Q.focus();return}if(e.key===`Escape`&&!e.isComposing&&wx){e.preventDefault(),Ax();return}if(bS(e))return;let t=ja(e.key);t&&(e.preventDefault(),mS.add(t),hS.add(t))}),window.addEventListener(`keyup`,e=>{let t=ja(e.key);t&&mS.delete(t)}),window.addEventListener(`blur`,()=>mS.clear()),document.querySelector(`#code`).addEventListener(`focusin`,()=>mS.clear());for(let e of document.querySelectorAll(`#tabs, #hint-panel, #cleared`))e.addEventListener(`click`,e=>{let t=e.target instanceof Element?e.target.closest(`button`):null;t&&document.activeElement===t&&(t.blur(),Q.focus())});Q.addEventListener(`pointerdown`,()=>{document.activeElement?.blur(),Q.focus()}),ux.addEventListener(`click`,()=>{Vx=!0,ux.hidden=!0,Q.focus(),$&&Cb($.sounds.splice(0))});var xS=0,SS=null;function CS(e){if(SS!==null&&(xS+=(e-SS)/1e3),SS=e,$&&(Vx||Hx===`メニュー`)&&!wx&&!iS){let e=0;for(;xS>=.016666666666666666&&e<5;){let t=Vx?{keys:[...new Set([...mS,...hS])],clicks:gS,mouse:_S}:{keys:[]};hS.clear(),gS=[];try{Xi($,t),Vx&&Cb($.sounds.splice(0))}catch(e){$=null,bb(),Wx(Rx,e);break}if(Hx===`メニュー`){if(Zx($),Hx!==`メニュー`)break}else!Bx&&$.variables.get(`クリア`)===!0&&(Bx=!0,Ux.add(zx),_x.hidden=!1,Z.cleared.includes(X[zx].file)||(Z.cleared.push(X[zx].file),lx()));xS-=$e,e+=1}e===5&&(xS=0)}else xS=0;$&&(Lx($),bx.setTransform(Ix,0,0,Ix,0,0),bx.imageSmoothingQuality=`high`,ka(bx,$,{selected:null,linked:[],selectedText:null,linkedTexts:[],editing:null,pointer:null},!1,gb)),requestAnimationFrame(CS)}requestAnimationFrame(CS);
+`),hints:t.sort((e,t)=>e.order-t.order).map(e=>e.text)}}function rx(e,t,n=!1){return n||e===0||t.has(e)||t.has(e-1)}function ix(){return Math.max(1,Math.ceil(X.length/10))}function ax(e,t=!1){if(t)return ix();let n=1;for(;n<ix();){let t=(n-1)*10;if(!X.slice(t,t+10).every((n,r)=>e.has(t+r)))break;n+=1}return n}var ox=Object.assign({"../ゲーム/画面/メニュー.wokoto":$b,"../ゲーム/画面/設定.wokoto":ex}),sx=ox[`../ゲーム/画面/メニュー.wokoto`]??``;function cx(e,t,n=!1){if(e===0){let e=X.findIndex((e,n)=>!t.has(n));return e===-1?X.length-1:e}return typeof e==`number`&&Number.isInteger(e)&&e>=1&&e<=X.length&&rx(e-1,t,n)?e-1:null}var lx=ox[`../ゲーム/画面/設定.wokoto`]??``,ux=(()=>{try{return window.localStorage}catch{return null}})(),Z=ux?Ob(ux):Db();function dx(){return ux?kb(ux,Z):!1}var Q=document.querySelector(`#game`),fx=document.querySelector(`#start`),px=document.querySelector(`#file-name`),mx=document.querySelector(`#tab`),hx=document.querySelector(`#problems`),gx=document.querySelector(`#status-problems`),_x=document.querySelector(`#status-stage`),vx=document.querySelector(`#reset`),yx=document.querySelector(`#cleared`),bx=document.querySelector(`#menu`),xx=document.querySelector(`#next`),Sx=Q.getContext(`2d`),Cx=document.querySelector(`#settings`),wx=document.querySelector(`#settings-problems`),Tx=Z.settings??lx,Ex=!1;function Dx(e){for(let[t,n]of Object.entries($a(e)))document.documentElement.style.setProperty(t,n);Cb(e.musicVolume/100,e.soundVolume/100)}function Ox(e){try{Dx(eo(e)),Tx=e,wx.hidden=!0;let t=e===lx?null:e;Z.settings!==t&&(Z.settings=t,dx())}catch(t){wx.replaceChildren(...Fy(t).map(t=>t.at===null?t.message:`${Iy(e,t.at)}行目：${t.message}`).map(e=>{let t=document.createElement(`li`);return t.textContent=e,t})),wx.hidden=!1}}Ox(Tx);var kx,Ax=Py(document.querySelector(`#settings-code`),()=>{window.clearTimeout(kx),kx=window.setTimeout(function e(){Ax.composing()?kx=window.setTimeout(e,300):Ox(Ax.text())},300)},`設定`);function jx(){Ex=!0,Cx.hidden=!1,Ax.load(Tx)}function Mx(){window.clearTimeout(kx),Ox(Ax.text()),Ex=!1,Cx.hidden=!0,Q.focus()}document.querySelector(`#close-settings`).addEventListener(`click`,Mx),document.querySelector(`#open-settings`).addEventListener(`click`,jx);var Nx=document.querySelector(`#save-note`),Px;function Fx(e){Nx.textContent=e,window.clearTimeout(Px),Px=window.setTimeout(()=>Nx.textContent=``,2500)}document.querySelector(`#save-now`).addEventListener(`click`,()=>{window.clearTimeout(kx),Ox(Ax.text()),Fx(dx()?`セーブしました`:`セーブできませんでした（このブラウザでは残せません）`)});var Ix=document.querySelector(`#unlock-all`);function Lx(){Ix.textContent=Z.unlockAll?`🔒 順番にひらく`:`🔓 全部ひらく`}Lx(),Ix.addEventListener(`click`,()=>{Z.unlockAll=!Z.unlockAll,dx(),Lx(),Fx(Z.unlockAll?`全部のステージを遊べるようにしました`:`前のステージをクリアするまで、選べないようにしました`),Wx===`メニュー`&&Qx()}),document.querySelector(`#erase-save`).addEventListener(`click`,()=>{window.confirm(`クリアした記録・書き換えた文・設定を、全部消してはじめに戻しますか？（元に戻せません）`)&&(ux&&Ab(ux),Object.assign(Z,Db()),Gx.clear(),Lx(),Ax.load(lx),Ox(lx),Wx===`ステージ`?Zx(Vx):Qx(),Fx(`セーブを消しました`))});var Rx=1;function zx(e){let t=Q.parentElement.getBoundingClientRect(),n=Q.getBoundingClientRect().height||t.height,r=e.screen.height,i=Math.max(1,Math.min(Math.round(r*t.width/n),e.world.width));e.screen.width!==i&&(e.screen={width:i,height:r}),Rx=Math.max(1,n*(window.devicePixelRatio||1)/r);let a=Math.round(i*Rx),o=Math.round(r*Rx);(Q.width!==a||Q.height!==o)&&(Q.width=a,Q.height=o)}var $=null,Bx=``,Vx=0,Hx=!1,Ux=!1,Wx=`メニュー`,Gx=new Set(X.flatMap((e,t)=>Z.cleared.includes(e.file)?[t]:[]));function Kx(e,t){hx.replaceChildren();let n=Fy(t);for(let t of n){let n=document.createElement(`li`);if(n.textContent=t.message,t.at!==null){let r=document.createElement(`span`);r.className=`line`,r.textContent=`${Iy(e,t.at)}行目`,n.append(r),n.addEventListener(`click`,()=>Xx.goTo(t.at))}hx.append(n)}hx.hidden=!1,gx.textContent=`✖ 問題 ${n.length}`,gx.classList.add(`bad`)}function qx(){hx.hidden=!0,hx.replaceChildren(),gx.textContent=`✔ 問題なし`,gx.classList.remove(`bad`)}function Jx(e){try{return $=zi(Cn(he(He(e),e))),Bx=e,Hx=!1,yx.hidden=!0,qx(),Sb(),Ux&&Tb($.sounds.splice(0)),!0}catch(t){return Kx(e,t),!1}}var Yx,Xx=Py(document.querySelector(`#code`),()=>{window.clearTimeout(Yx),Yx=window.setTimeout(function e(){Wx===`ステージ`&&(Xx.composing()?Yx=window.setTimeout(e,300):(Jx(Xx.text()),Mb(Z,X[Vx].file,X[Vx].text,Xx.text()),dx()))},300),mx.classList.toggle(`changed`,Xx.text()!==X[Vx].text)});function Zx(e){(e!==Vx||Wx!==`ステージ`)&&(pS=0,uS.hidden=!0),Vx=e;let t=X[e],n=jb(Z,t.file,t.text);px.textContent=t.file,_x.textContent=`ステージ ${e+1} / ${X.length}：${t.title}`,mx.classList.toggle(`changed`,n!==t.text),xx.textContent=e+1<X.length?`つぎのステージへ ▶`:`メニューへ ▶`,Wx=`ステージ`,document.body.classList.remove(`menu`),window.clearTimeout(Yx),Xx.load(n),Jx(t.text),n!==t.text&&Jx(n),!Z.tutorialSeen&&!oS&&cS()}function Qx(){Wx===`ステージ`&&(window.clearTimeout(Yx),Mb(Z,X[Vx].file,X[Vx].text,Xx.text()),dx()),Wx=`メニュー`,document.body.classList.add(`menu`),Jx(sx),$?.variables.set(`ステージ名`,X.map(e=>e.title)),$?.variables.set(`クリアした`,X.map((e,t)=>Gx.has(t))),$?.variables.set(`遊べる`,X.map((e,t)=>rx(t,Gx,Z.unlockAll)));let e=ax(Gx,Z.unlockAll);$?.variables.set(`ページ数`,ix()),$?.variables.set(`ひらけたページ`,e),$?.variables.set(`ページ`,Math.min(Math.floor(Vx/10)+1,e))}function $x(e){e.variables.set(`画面の幅`,e.screen.width);let t=e.variables.get(`遊ぶ`);if(t!=null){e.variables.set(`遊ぶ`,null);let n=cx(t,Gx,Z.unlockAll);n!==null&&(Zx(n),Q.focus())}e.variables.get(`設定を開く`)===!0&&(e.variables.set(`設定を開く`,!1),jx())}var eS=document.querySelector(`#tutorial`),tS=[...eS.querySelectorAll(`.page`)],nS=document.querySelector(`#tutorial-page`),rS=document.querySelector(`#tutorial-back`),iS=document.querySelector(`#tutorial-next`),aS=0,oS=!1;function sS(e){aS=e,tS.forEach((t,n)=>t.hidden=n!==e),nS.textContent=`${e+1} / ${tS.length}`,rS.hidden=e===0,iS.textContent=e+1<tS.length?`つぎへ ▶`:`はじめる ▶`}function cS(){oS=!0,eS.hidden=!1,sS(0),iS.focus()}function lS(){oS=!1,eS.hidden=!0,Z.tutorialSeen||(Z.tutorialSeen=!0,dx()),Q.focus()}rS.addEventListener(`click`,()=>sS(Math.max(0,aS-1))),iS.addEventListener(`click`,()=>{aS+1<tS.length?sS(aS+1):lS()}),document.querySelector(`#open-tutorial`).addEventListener(`click`,cS);var uS=document.querySelector(`#hint-panel`),dS=document.querySelector(`#hint-list`),fS=document.querySelector(`#hint-more`),pS=0;function mS(){let e=X[Vx].hints;dS.replaceChildren(...e.slice(0,pS).map(e=>{let t=document.createElement(`li`);return t.textContent=e,t})),uS.hidden=pS===0,fS.hidden=pS>=e.length}function hS(){let e=X[Vx].hints;e.length===0?(dS.replaceChildren(Object.assign(document.createElement(`li`),{textContent:`このステージには、ヒントがありません。`})),uS.hidden=!1,fS.hidden=!0):(pS=Math.min(pS+1,e.length),mS())}document.querySelector(`#hint`).addEventListener(`click`,hS),fS.addEventListener(`click`,hS),document.querySelector(`#hint-close`).addEventListener(`click`,()=>{uS.hidden=!0}),vx.addEventListener(`click`,()=>{let e=X[Vx];(Xx.text()===e.text||window.confirm(`書き換えた文を消して、はじめの文に戻しますか？`))&&(window.clearTimeout(Yx),Mb(Z,e.file,e.text,e.text),dx(),Zx(Vx),Q.focus())}),xx.addEventListener(`click`,()=>{Vx+1<X.length?Zx(Vx+1):Qx(),Q.focus()}),bx.addEventListener(`click`,()=>{Qx(),Q.focus()}),Qx();var gS=new Set,_S=new Set,vS=[],yS,bS=`マウス`;function xS(e){let t=Q.getBoundingClientRect(),n=$?.screen??{width:Q.width,height:Q.height};return{x:(e.clientX-t.left)*n.width/t.width,y:(e.clientY-t.top)*n.height/t.height}}Q.addEventListener(`pointermove`,e=>{yS=xS(e)}),Q.addEventListener(`pointerdown`,e=>{let t=xS(e);yS=t,vS.push(t),gS.add(bS),_S.add(bS)}),window.addEventListener(`pointerup`,()=>gS.delete(bS));var SS=e=>e.target instanceof Element&&e.target.closest(`#code, #settings`)!==null;window.addEventListener(`keydown`,e=>{if(oS){e.key===`ArrowRight`||e.key===`Enter`?iS.click():e.key===`ArrowLeft`?sS(Math.max(0,aS-1)):e.key===`Escape`&&lS(),e.preventDefault();return}if(e.key===`Escape`&&!e.isComposing&&e.target instanceof Element&&e.target.closest(`#code`)){e.preventDefault(),document.activeElement?.blur(),Q.focus();return}if(e.key===`Escape`&&!e.isComposing&&Ex){e.preventDefault(),Mx();return}if(SS(e))return;let t=ja(e.key);t&&(e.preventDefault(),gS.add(t),_S.add(t))}),window.addEventListener(`keyup`,e=>{let t=ja(e.key);t&&gS.delete(t)}),window.addEventListener(`blur`,()=>gS.clear()),document.querySelector(`#code`).addEventListener(`focusin`,()=>gS.clear());for(let e of document.querySelectorAll(`#tabs, #hint-panel, #cleared`))e.addEventListener(`click`,e=>{let t=e.target instanceof Element?e.target.closest(`button`):null;t&&document.activeElement===t&&(t.blur(),Q.focus())});Q.addEventListener(`pointerdown`,()=>{document.activeElement?.blur(),Q.focus()}),fx.addEventListener(`click`,()=>{Ux=!0,fx.hidden=!0,Q.focus(),$&&Tb($.sounds.splice(0))});var CS=0,wS=null;function TS(e){if(wS!==null&&(CS+=(e-wS)/1e3),wS=e,$&&(Ux||Wx===`メニュー`)&&!Ex&&!oS){let e=0;for(;CS>=.016666666666666666&&e<5;){let t=Ux?{keys:[...new Set([...gS,..._S])],clicks:vS,mouse:yS}:{keys:[]};_S.clear(),vS=[];try{Xi($,t),Ux&&Tb($.sounds.splice(0))}catch(e){$=null,Sb(),Kx(Bx,e);break}if(Wx===`メニュー`){if($x($),Wx!==`メニュー`)break}else!Hx&&$.variables.get(`クリア`)===!0&&(Hx=!0,Gx.add(Vx),yx.hidden=!1,Z.cleared.includes(X[Vx].file)||(Z.cleared.push(X[Vx].file),dx()));CS-=$e,e+=1}e===5&&(CS=0)}else CS=0;$&&(zx($),Sx.setTransform(Rx,0,0,Rx,0,0),Sx.imageSmoothingQuality=`high`,ka(Sx,$,{selected:null,linked:[],selectedText:null,linkedTexts:[],editing:null,pointer:null},!1,vb)),requestAnimationFrame(TS)}requestAnimationFrame(TS);
