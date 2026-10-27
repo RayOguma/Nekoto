@@ -19,7 +19,25 @@ import {
 } from "wokoto";
 import { createCodeEditor } from "./editor";
 import { handleSounds, imageOf, setVolume, stopAllSounds } from "./media";
+import { clearSave, emptySave, loadSave, rememberText, stageText, writeSave } from "./save";
 import { chosenStage, MENU_TEXT, SETTINGS_TEXT, STAGES } from "./stages";
+
+// ---- セーブ ----
+// 進み・ステージごとに書き換えた文・設定の文を、このブラウザ（localStorage）に自動で残す。設定の画面からも残せて、消せる。
+
+const storage = (() => {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+})();
+const save = storage ? loadSave(storage) : emptySave();
+
+// 今のセーブを残す。残せたか。
+function persist(): boolean {
+  return storage ? writeSave(storage, save) : false;
+}
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
 const start = document.querySelector<HTMLButtonElement>("#start")!;
@@ -39,8 +57,8 @@ const ctx = canvas.getContext("2d")!;
 
 const settingsDialog = document.querySelector<HTMLElement>("#settings")!;
 const settingsProblems = document.querySelector<HTMLUListElement>("#settings-problems")!;
-// 今の設定の文（設定の画面で書き換えたもの）。
-let settingsText = SETTINGS_TEXT;
+// 今の設定の文（設定の画面で書き換えたもの）。セーブにあれば、それ。
+let settingsText = save.settings ?? SETTINGS_TEXT;
 // 設定の画面を開いている間は、ゲームを止める。
 let settingsOpen = false;
 
@@ -57,6 +75,12 @@ function applySettingsText(text: string) {
     applySettings(readSettings(text));
     settingsText = text;
     settingsProblems.hidden = true;
+    // 読めた設定だけを残す（はじめの設定と同じなら、残さない）。
+    const next = text === SETTINGS_TEXT ? null : text;
+    if (save.settings !== next) {
+      save.settings = next;
+      persist();
+    }
   } catch (error) {
     const errors = error instanceof CheckErrors ? error.all : error instanceof CheckError ? [error] : [];
     const lineOf = (at: number) => text.slice(0, at).split("\n").length;
@@ -106,6 +130,41 @@ function closeSettings() {
 document.querySelector("#close-settings")!.addEventListener("click", closeSettings);
 document.querySelector("#open-settings")!.addEventListener("click", openSettings);
 
+// 設定の画面の「セーブ」「セーブを消す」。
+const saveNote = document.querySelector<HTMLElement>("#save-note")!;
+let noteTimer: number | undefined;
+function note(text: string) {
+  saveNote.textContent = text;
+  window.clearTimeout(noteTimer);
+  noteTimer = window.setTimeout(() => (saveNote.textContent = ""), 2500);
+}
+
+document.querySelector("#save-now")!.addEventListener("click", () => {
+  window.clearTimeout(settingsTimer);
+  applySettingsText(settingsEditor.text());
+  note(persist() ? "セーブしました" : "セーブできませんでした（このブラウザでは残せません）");
+});
+
+document.querySelector("#erase-save")!.addEventListener("click", () => {
+  if (!window.confirm("クリアした記録・書き換えた文・設定を、全部消してはじめに戻しますか？（元に戻せません）")) {
+    return;
+  }
+  if (storage) {
+    clearSave(storage);
+  }
+  Object.assign(save, emptySave());
+  clearedStages.clear();
+  settingsEditor.load(SETTINGS_TEXT);
+  applySettingsText(SETTINGS_TEXT);
+  // 開いている画面も、はじめの形にする。
+  if (mode === "ステージ") {
+    openStage(stageIndex);
+  } else {
+    openMenu();
+  }
+  note("セーブを消しました");
+});
+
 // ---- ゲームの画面の幅 ----
 // 高さは文で決めた高さのまま、見える横幅を窓に合わせて広げる（黒い余りを出さない）。世界より広くはしない。
 
@@ -135,8 +194,8 @@ let isCleared = false;
 let started = false;
 // 今の画面。メニュー（タイトルとステージ選択。窓いっぱい）か、ステージ（上にゲーム、下に文）。
 let mode: "メニュー" | "ステージ" = "メニュー";
-// クリアしたステージの番号（0 から）。
-const clearedStages = new Set<number>();
+// クリアしたステージの番号（0 から）。セーブには、ファイル名で残している。
+const clearedStages = new Set<number>(STAGES.flatMap((stage, index) => (save.cleared.includes(stage.file) ? [index] : [])));
 
 // 間違いを、下の問題の一覧と帯に出す。行を押すと、その行へ行く。
 function showProblem(text: string, error: unknown) {
@@ -196,21 +255,26 @@ const editor = createCodeEditor(document.querySelector<HTMLElement>("#code")!, (
       return;
     }
     build(editor.text());
+    // 書き換えた文を残す（はじめの文に戻したなら、残していた文を消す）。
+    rememberText(save, STAGES[stageIndex].file, STAGES[stageIndex].text, editor.text());
+    persist();
   }, 300);
   tab.classList.toggle("changed", editor.text() !== STAGES[stageIndex].text);
 });
 
+// ステージを開く。セーブに書き換えた文があれば、その続きから。
 function openStage(index: number) {
   stageIndex = index;
   const stage = STAGES[index];
+  const text = stageText(save, stage.file, stage.text);
   fileName.textContent = stage.file;
   statusStage.textContent = `ステージ ${index + 1} / ${STAGES.length}：${stage.title}`;
-  tab.classList.remove("changed");
+  tab.classList.toggle("changed", text !== stage.text);
   nextButton.textContent = index + 1 < STAGES.length ? "つぎのステージへ ▶" : "メニューへ ▶";
   mode = "ステージ";
   document.body.classList.remove("menu");
-  editor.load(stage.text);
-  build(stage.text);
+  editor.load(text);
+  build(text);
 }
 
 // メニューを開く。ステージの名前と、クリアしたかの並びを、名前「ステージ名」「クリアした」に入れて渡す。
@@ -247,7 +311,15 @@ function watchMenu(state: GameState) {
   }
 }
 
+// もとに戻す：書き換えた文を消して、はじめの文に戻す（残していた文も消す）。書き換えていたら、先に確かめる。
 resetButton.addEventListener("click", () => {
+  const stage = STAGES[stageIndex];
+  if (editor.text() !== stage.text && !window.confirm("書き換えた文を消して、はじめの文に戻しますか？")) {
+    return;
+  }
+  window.clearTimeout(timer);
+  rememberText(save, stage.file, stage.text, stage.text);
+  persist();
   openStage(stageIndex);
   canvas.focus();
 });
@@ -341,15 +413,18 @@ function frame(now: number) {
     stored += (now - last) / 1000;
   }
   last = now;
-  if (game && started && !settingsOpen) {
+  // メニューは、はじめのクリックの前から進める（真ん中にそろえる文などを動かすため）。操作と音は、クリックしてから。
+  if (game && (started || mode === "メニュー") && !settingsOpen) {
     let steps = 0;
     while (stored >= STEP_SECONDS && steps < 5) {
-      const input = { keys: [...new Set([...held, ...pressedSinceStep])], clicks, mouse };
+      const input = started ? { keys: [...new Set([...held, ...pressedSinceStep])], clicks, mouse } : { keys: [] };
       pressedSinceStep.clear();
       clicks = [];
       try {
         step(game, input);
-        handleSounds(game.sounds.splice(0));
+        if (started) {
+          handleSounds(game.sounds.splice(0));
+        }
       } catch (error) {
         // 遊んでいる途中の間違い（0 で割った など）。このゲームは止めて、知らせる。
         game = null;
@@ -367,6 +442,10 @@ function frame(now: number) {
         isCleared = true;
         clearedStages.add(stageIndex);
         cleared.hidden = false;
+        if (!save.cleared.includes(STAGES[stageIndex].file)) {
+          save.cleared.push(STAGES[stageIndex].file);
+          persist();
+        }
       }
       stored -= STEP_SECONDS;
       steps += 1;

@@ -229,6 +229,12 @@
       #settings header .spacer {
         flex: 1;
       }
+      #save-note {
+        color: var(--ui-text-muted);
+        font-weight: normal;
+        font-size: 13px;
+        margin-right: 6px;
+      }
       #settings-code {
         flex: 1 1 auto;
         min-height: 0;
@@ -287,6 +293,9 @@
         <header>
           <span>⚙ せってい</span>
           <span class="spacer"></span>
+          <span id="save-note"></span>
+          <button id="save-now" class="tool" type="button" title="今の進みと、書き換えた文と、設定を残す（ふだんも自動で残している）">💾 セーブ</button>
+          <button id="erase-save" class="tool" type="button" title="残した進み・書き換えた文・設定を、全部消してはじめに戻す">セーブを消す</button>
           <button id="close-settings" class="tool" type="button">◀ もどる</button>
         </header>
         <div id="settings-code"></div>
