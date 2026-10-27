@@ -149,11 +149,11 @@ test("メニュー：はじめるを押すと「遊ぶ」が 0（つづき）に
   expect(game.variables.get("遊ぶ")).toBe(2);
 });
 
-test("設定の文が読める。はじめの音楽の音量は小さい", () => {
+test("設定の文が読める。はじめの音楽と効果音の音量は小さい", () => {
   const settings = readSettings(SETTINGS_TEXT);
   expect(settings.theme).toBe("夜");
   expect(settings.musicVolume).toBe(3);
-  expect(settings.soundVolume).toBe(80);
+  expect(settings.soundVolume).toBe(3);
 });
 
 test("メニュー：字の部品（副題・札の名前）が真ん中にそろう", () => {
