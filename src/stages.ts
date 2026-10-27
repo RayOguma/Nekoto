@@ -48,6 +48,31 @@ export function playable(index: number, cleared: ReadonlySet<number>, unlockAll 
   return unlockAll || index === 0 || cleared.has(index) || cleared.has(index - 1);
 }
 
+// ステージ選択の1ページに並べるステージの数。
+export const PAGE_SIZE = 10;
+
+// ステージ選択のページの数。
+export function pageCount(): number {
+  return Math.max(1, Math.ceil(STAGES.length / PAGE_SIZE));
+}
+
+// 行けるページの数。前のページのステージを全部クリアすると、次のページがひらく。unlockAll なら全部。
+export function openedPages(cleared: ReadonlySet<number>, unlockAll = false): number {
+  if (unlockAll) {
+    return pageCount();
+  }
+  let opened = 1;
+  while (opened < pageCount()) {
+    const from = (opened - 1) * PAGE_SIZE;
+    const allCleared = STAGES.slice(from, from + PAGE_SIZE).every((_, i) => cleared.has(from + i));
+    if (!allCleared) {
+      break;
+    }
+    opened += 1;
+  }
+  return opened;
+}
+
 // メニュー（タイトルとステージ選択）の文。ゲーム/画面/メニュー.wokoto。
 const screens = import.meta.glob<string>("../ゲーム/画面/*.wokoto", { query: "?raw", import: "default", eager: true });
 export const MENU_TEXT = screens["../ゲーム/画面/メニュー.wokoto"] ?? "";

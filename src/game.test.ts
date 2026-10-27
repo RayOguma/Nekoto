@@ -194,3 +194,24 @@ test("メニュー：まだ遊べない札には南京錠が出て、押して�
   step(game, { keys: [], clicks: [{ x: 65 + 280 + 55, y: 450 - 255 - 55 }] });
   expect(game.variables.get("遊ぶ")).toBe(-1);
 });
+
+test("メニュー：ひらけたページがあると ▶ が出て、押すと次の10枚になる", () => {
+  const game = gameOf(menu);
+  const names = Array.from({ length: 20 }, (_, i) => `ステージ${i + 1}`);
+  game.variables.set("ステージ名", names);
+  game.variables.set("クリアした", names.map((_, i) => i < 10));
+  game.variables.set("遊べる", names.map((_, i) => i <= 10));
+  game.variables.set("ページ数", 2);
+  game.variables.set("ひらけたページ", 2);
+  step(game, { keys: [] });
+  step(game, { keys: [], clicks: [{ x: 400, y: 450 - 90 - 30 }] });
+  step(game, { keys: [] });
+  const labels = () => game.things.filter((thing) => thing.kinds.includes("札")).map((thing) => thing.label);
+  expect(labels()).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
+  const next = game.things.find((thing) => thing.kinds.includes("次へボタン"))!;
+  expect(next.x).toBeGreaterThan(0);
+  step(game, { keys: [], clicks: [{ x: next.x + 10, y: next.y + 10 }] });
+  step(game, { keys: [] });
+  expect(labels()).toEqual(["11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]);
+  expect(game.variables.get("ページ")).toBe(2);
+});

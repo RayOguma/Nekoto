@@ -20,7 +20,7 @@ import {
 import { createCodeEditor } from "./editor";
 import { handleSounds, imageOf, setVolume, stopAllSounds } from "./media";
 import { clearSave, emptySave, loadSave, rememberText, stageText, writeSave } from "./save";
-import { chosenStage, MENU_TEXT, playable, SETTINGS_TEXT, STAGES } from "./stages";
+import { chosenStage, MENU_TEXT, openedPages, PAGE_SIZE, pageCount, playable, SETTINGS_TEXT, STAGES } from "./stages";
 
 // ---- セーブ ----
 // 進み・ステージごとに書き換えた文・設定の文を、このブラウザ（localStorage）に自動で残す。設定の画面からも残せて、消せる。
@@ -326,6 +326,11 @@ function openMenu() {
     "遊べる",
     STAGES.map((_, index) => playable(index, clearedStages, save.unlockAll)),
   );
+  // ステージ選択のページ。今まで遊んでいたステージのページから見せる（ひらけたページまで）。
+  const opened = openedPages(clearedStages, save.unlockAll);
+  game?.variables.set("ページ数", pageCount());
+  game?.variables.set("ひらけたページ", opened);
+  game?.variables.set("ページ", Math.min(Math.floor(stageIndex / PAGE_SIZE) + 1, opened));
 }
 
 // メニューの をこと の文が、名前「遊ぶ」「設定を開く」に入れたものを見て、ステージや設定を開く。

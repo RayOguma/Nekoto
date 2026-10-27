@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { chosenStage, playable, splitHints, STAGES, titleOf } from "./stages";
+import { chosenStage, openedPages, pageCount, playable, splitHints, STAGES, titleOf } from "./stages";
 
 test("ファイル名から、見せる名前を作る", () => {
   expect(titleOf("01_ジャンプ.wokoto")).toBe("ジャンプ");
@@ -33,4 +33,13 @@ test("どのステージにもヒントが3つある", () => {
   for (const stage of STAGES) {
     expect(stage.hints, stage.file).toHaveLength(3);
   }
+});
+
+test("ページ：1〜10を全部クリアすると、2ページ目がひらく", () => {
+  expect(pageCount()).toBe(2);
+  const some = new Set([0, 1, 2]);
+  expect(openedPages(some)).toBe(1);
+  expect(openedPages(some, true)).toBe(2);
+  const first = new Set(Array.from({ length: 10 }, (_, i) => i));
+  expect(openedPages(first)).toBe(2);
 });
