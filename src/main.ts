@@ -9,6 +9,7 @@ import {
   DEFAULT_SETTINGS,
   type GameState,
   keyWordOf,
+  type Point,
   parse,
   render,
   type Settings,
@@ -18,7 +19,7 @@ import {
 } from "wokoto";
 import { createCodeEditor } from "./editor";
 import { handleSounds, imageOf, stopAllSounds } from "./media";
-import { STAGES } from "./stages";
+import { chosenStage, MENU_TEXT, stageList, STAGES } from "./stages";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
 const start = document.querySelector<HTMLButtonElement>("#start")!;
@@ -29,6 +30,7 @@ const statusProblems = document.querySelector<HTMLElement>("#status-problems")!;
 const statusStage = document.querySelector<HTMLElement>("#status-stage")!;
 const resetButton = document.querySelector<HTMLButtonElement>("#reset")!;
 const cleared = document.querySelector<HTMLElement>("#cleared")!;
+const menuButton = document.querySelector<HTMLButtonElement>("#menu")!;
 const nextButton = document.querySelector<HTMLButtonElement>("#next")!;
 const ctx = canvas.getContext("2d")!;
 
@@ -69,6 +71,10 @@ let stageIndex = 0;
 let isCleared = false;
 // はじめのクリックが済んだか（済むまでゲームを進めず、音も鳴らさない）。
 let started = false;
+// 今の画面。メニュー（タイトルとステージ選択。窓いっぱい）か、ステージ（上にゲーム、下に文）。
+let mode: "メニュー" | "ステージ" = "メニュー";
+// クリアしたステージの番号（0 から）。
+const clearedStages = new Set<number>();
 
 // 間違いを、下の問題の一覧と帯に出す。行を押すと、その行へ行く。
 function showProblem(text: string, error: unknown) {
@@ -138,10 +144,36 @@ function openStage(index: number) {
   fileName.textContent = stage.file;
   statusStage.textContent = `ステージ ${index + 1} / ${STAGES.length}：${stage.title}`;
   tab.classList.remove("changed");
-  nextButton.textContent = index + 1 < STAGES.length ? "つぎのステージへ" : "さいごのステージでした";
-  nextButton.disabled = index + 1 >= STAGES.length;
+  nextButton.textContent = index + 1 < STAGES.length ? "つぎのステージへ ▶" : "メニューへ ▶";
+  mode = "ステージ";
+  document.body.classList.remove("menu");
   editor.load(stage.text);
   build(stage.text);
+}
+
+// メニューを開く。ステージの一覧（クリアの印つき）を、名前「ステージ一覧」に入れて渡す。
+function openMenu() {
+  mode = "メニュー";
+  document.body.classList.add("menu");
+  build(MENU_TEXT);
+  game?.variables.set("ステージ一覧", stageList(clearedStages));
+}
+
+// メニューの をこと の文が、名前「遊ぶ」「設定を開く」に入れたものを見て、ステージや設定を開く。
+function watchMenu(state: GameState) {
+  const choice = state.variables.get("遊ぶ");
+  if (typeof choice === "string") {
+    state.variables.set("遊ぶ", null);
+    const index = chosenStage(choice, clearedStages);
+    if (index !== null) {
+      openStage(index);
+      canvas.focus();
+    }
+  }
+  if (state.variables.get("設定を開く") === true) {
+    state.variables.set("設定を開く", false);
+    // 設定の画面は、次に作る。
+  }
 }
 
 resetButton.addEventListener("click", () => {
@@ -151,17 +183,43 @@ resetButton.addEventListener("click", () => {
 nextButton.addEventListener("click", () => {
   if (stageIndex + 1 < STAGES.length) {
     openStage(stageIndex + 1);
-    canvas.focus();
+  } else {
+    openMenu();
   }
+  canvas.focus();
+});
+menuButton.addEventListener("click", () => {
+  openMenu();
+  canvas.focus();
 });
 
-openStage(0);
+openMenu();
 
 // ---- 入力 ----
 // 下の文を打っているときのキーは、文が受け取る（ゲームには渡さない）。
 
 const held = new Set<string>();
 const pressedSinceStep = new Set<string>();
+let clicks: Point[] = [];
+let mouse: Point | undefined;
+const MOUSE_KEY = "マウス";
+
+// 画面の上の位置を、ゲームの中の位置（canvas の画素）にする。
+function pointOf(event: MouseEvent): Point {
+  const rect = canvas.getBoundingClientRect();
+  return { x: ((event.clientX - rect.left) * canvas.width) / rect.width, y: ((event.clientY - rect.top) * canvas.height) / rect.height };
+}
+canvas.addEventListener("pointermove", (event) => {
+  mouse = pointOf(event);
+});
+canvas.addEventListener("pointerdown", (event) => {
+  const at = pointOf(event);
+  mouse = at;
+  clicks.push(at);
+  held.add(MOUSE_KEY);
+  pressedSinceStep.add(MOUSE_KEY);
+});
+window.addEventListener("pointerup", () => held.delete(MOUSE_KEY));
 const typingInCode = (event: Event) => event.target instanceof Element && event.target.closest("#code") !== null;
 
 window.addEventListener("keydown", (event) => {
@@ -215,8 +273,9 @@ function frame(now: number) {
   if (game && started) {
     let steps = 0;
     while (stored >= STEP_SECONDS && steps < 5) {
-      const input = { keys: [...new Set([...held, ...pressedSinceStep])] };
+      const input = { keys: [...new Set([...held, ...pressedSinceStep])], clicks, mouse };
       pressedSinceStep.clear();
+      clicks = [];
       try {
         step(game, input);
         handleSounds(game.sounds.splice(0));
@@ -227,9 +286,15 @@ function frame(now: number) {
         showProblem(gameText, error);
         break;
       }
-      // 名前「クリア」が 真 になったら、クリア。
-      if (!isCleared && game.variables.get("クリア") === true) {
+      if (mode === "メニュー") {
+        watchMenu(game);
+        if (mode !== "メニュー") {
+          break;
+        }
+      } else if (!isCleared && game.variables.get("クリア") === true) {
+        // 名前「クリア」が 真 になったら、クリア。
         isCleared = true;
+        clearedStages.add(stageIndex);
         cleared.hidden = false;
       }
       stored -= STEP_SECONDS;

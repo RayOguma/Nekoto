@@ -41,6 +41,13 @@
         display: block;
         height: 55vh;
       }
+      /* メニュー（タイトルとステージ選択）のときは、ゲームを窓いっぱいにして、エディタを隠す。 */
+      body.menu #game {
+        height: 100vh;
+      }
+      body.menu #editor-pane {
+        display: none;
+      }
       #game:focus {
         outline: none;
       }
@@ -192,7 +199,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="menu">
     <div id="app">
       <div id="stage">
         <canvas id="game" width="800" height="450" tabindex="0"></canvas>
@@ -206,6 +213,7 @@
         <div id="tabs">
           <div class="tab" id="tab"><span id="file-name"></span><span class="dot" title="書き換えている"></span></div>
           <div class="spacer"></div>
+          <button id="menu" class="tool" type="button" title="タイトルとステージ選択に戻る">≡ メニュー</button>
           <button id="reset" class="tool" type="button" title="このステージの文を、はじめの形に戻す">↺ もとに戻す</button>
         </div>
         <div id="code"></div>
