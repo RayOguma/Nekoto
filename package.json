@@ -10,7 +10,8 @@
     "test": "vitest run --passWithNoTests",
     "app": "npm run build && tsc -p electron && electron .",
     "dist": "npm run build && tsc -p electron && electron-builder --win",
-    "release": "npm run dist && node scripts/publish.mjs"
+    "release": "npm run dist && node scripts/publish.mjs",
+    "web": "npm run build && gh-pages -d dist --nojekyll -m \"Web 版を更新する\""
   },
   "devDependencies": {
     "@codemirror/commands": "^6.11.1",
@@ -20,6 +21,7 @@
     "@types/node": "^26.6.5",
     "electron": "^44.9.3",
     "electron-builder": "^26.18.0",
+    "gh-pages": "^6.3.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vitest": "^5.0.4",
