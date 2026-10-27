@@ -45,6 +45,7 @@
 - `npm test`：確かめ（ステージがクリアできるか、メニュー、セーブ など）。
 - `npm run typecheck`：型の確かめ（画面の側と、`electron/` の側）。
 - `npm run app`：組み立ててから、アプリの窓で動かす。
+- `npm run release`：インストーラーを作って、GitHub の Releases に上げる（先に package.json の version を上げる。上げると、入れてある ねこと が次に起動したときに更新される）。
 - `npm run dist`：インストーラーを作る（`release/nekoto-setup-<版>.exe`）。署名していないので、入れるときに Windows の「認識されないアプリ」の警告が出る（「詳細情報」→「実行」で入れられる）。
 
 wokoto（をこと の処理系）は、隣のフォルダ `../wokoto` を読み込む。組み立てるときに中身が画面に取り込まれるので、アプリには wokoto のフォルダは入らない。

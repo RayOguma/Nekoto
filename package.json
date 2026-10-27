@@ -10,7 +10,7 @@
     "test": "vitest run --passWithNoTests",
     "app": "npm run build && tsc -p electron && electron .",
     "dist": "npm run build && tsc -p electron && electron-builder --win",
-    "release": "npm run build && tsc -p electron && electron-builder --win --publish always"
+    "release": "npm run dist && node scripts/publish.mjs"
   },
   "devDependencies": {
     "@codemirror/commands": "^6.11.1",
