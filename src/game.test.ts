@@ -20,15 +20,17 @@ for (const [path, source] of Object.entries(files).filter(([path]) => !path.ends
   });
 }
 
-// 右キーを押しっぱなしにして、スペースを 16 コマごとに押す。15 秒遊んで、クリアしたかを返す。
-// jumpAt を渡したら、ねこの横がその範囲にいるときだけスペースを押す（穴の手前で跳ぶ）。
-function cleared(source: string, jumpAt?: [number, number]): boolean {
+// 自動で遊ぶ係。右キーを押しっぱなしにして、スペースを 16 コマごとに押す。15 秒遊んで、クリアしたかを返す。
+// jumps：ねこの横がこの範囲にいたら、必ず跳ぶ（穴の手前など）。quiet：この範囲では跳ばない（穴の手前で早く跳びすぎないように）。
+type Bot = { jumps?: [number, number][]; quiet?: [number, number][] };
+
+function cleared(source: string, bot: Bot = {}): boolean {
   const game = gameOf(source);
+  const inside = (x: number, ranges: [number, number][] = []) => ranges.some(([from, to]) => x >= from && x <= to);
   for (let i = 0; i < 900; i++) {
     const keys = ["右キー"];
-    const cat = game.things.find((thing) => thing.kinds.includes("ねこ"));
-    const x = cat?.x ?? 0;
-    const want = jumpAt ? x >= jumpAt[0] && x <= jumpAt[1] : i % 16 < 2;
+    const x = game.things.find((thing) => thing.kinds.includes("ねこ"))?.x ?? 0;
+    const want = inside(x, bot.jumps) || (i % 16 < 2 && !inside(x, bot.quiet));
     if (want && i % 2 === 0) keys.push("スペース");
     step(game, { keys });
     if (game.variables.get("クリア") === true) return true;
@@ -36,21 +38,53 @@ function cleared(source: string, jumpAt?: [number, number]): boolean {
   return false;
 }
 
-// ステージごとの、書き換える前の文と、答えの一例。
-const answers: Record<string, [string, string, [number, number]?]> = {
-  "01_ジャンプ.wokoto": ["50 だけ", "200 だけ"],
-  "02_向き.wokoto": ["右キー を 押している なら、ねこ を 左 に", "右キー を 押している なら、ねこ を 右 に"],
-  "03_速さ.wokoto": ["右 に 2 だけ", "右 に 6 だけ", [800, 820]],
+// 自由に書けるところ（いちばん下の空の行）に、文を書き足す書き換え。
+const FREE = "# ▼ 変えられる\n\n# ▲ ここまで\n";
+const addLine = (line: string): [string, string] => [FREE, `# ▼ 変えられる\n${line}\n# ▲ ここまで\n`];
+const MICE: [string, string] = ["ねこ が ねずみ に 触れたら、ねこ を 横 80 縦 80 に 動かす。", "ねこ が ねずみ に 触れたら、その ねずみ を 消す。"];
+const RIGHT: [string, string] = ["右キー を 押している なら、ねこ を 左 に", "右キー を 押している なら、ねこ を 右 に"];
+
+// ステージごとの、答えの一例（書き換える前と後の組を、いくつか）と、自動で遊ぶ係の決まり。
+const answers: Record<string, { changes: [string, string][]; bot?: Bot }> = {
+  "01_ジャンプ.wokoto": { changes: [["50 だけ", "200 だけ"]] },
+  "02_向き.wokoto": { changes: [RIGHT] },
+  "03_速さ.wokoto": { changes: [["右 に 2 だけ", "右 に 6 だけ"]], bot: { jumps: [[800, 820]], quiet: [[500, 799]] } },
+  "04_台.wokoto": { changes: [["100 だけ", "150 だけ"], addLine("ねこ は 台 に 乗る。")] },
+  "05_ねずみ.wokoto": { changes: [["100 だけ", "200 だけ"], MICE] },
+  "06_壁と穴.wokoto": { changes: [["100 だけ", "200 だけ"], ["右 に 2 だけ", "右 に 6 だけ"]], bot: { jumps: [[1360, 1380]], quiet: [[1050, 1359]] } },
+  "07_がけ.wokoto": { changes: [RIGHT, ["1回 まで", "2回 まで"]], bot: { quiet: [[2000, 2400]] } },
+  "08_鍵と扉.wokoto": { changes: [["100 だけ", "200 だけ"], addLine("ねこ が 鍵 に 触れたら、扉 を 消す。")] },
+  "09_重い世界.wokoto": { changes: [["6000 だけ", "1500 だけ"], ["100 だけ", "200 だけ"], MICE], bot: { jumps: [[1520, 1540]], quiet: [[1250, 1519]] } },
+  // 右キーの行は、向き（左 → 右）と速さ（2 → 6）の2か所を書き換える。どちらを先に書き換えても見つかるように、数だけ・向きだけで探す。
+  "10_総まとめ.wokoto": {
+    changes: [
+      ["なら、ねこ を 左 に 2 だけ 動かす。\n\t左キー", "なら、ねこ を 右 に 2 だけ 動かす。\n\t左キー"],
+      ["100 だけ", "200 だけ"],
+      MICE,
+      ["に 2 だけ 動かす。\n\t左キー", "に 6 だけ 動かす。\n\t左キー"],
+    ],
+    bot: { jumps: [[1520, 1540]], quiet: [[1250, 1519]] },
+  },
 };
+
+const apply = (text: string, changes: [string, string][]) => changes.reduce((done, [before, after]) => done.replace(before, after), text);
 
 for (const stage of STAGES) {
   test(`書き換えたらクリアできる：${stage.file}`, () => {
     const answer = answers[stage.file];
     expect(answer, "答えの一例を answers に書く").toBeDefined();
-    const [before, after, jumpAt] = answer;
-    expect(stage.text).toContain(before);
-    expect(cleared(stage.text, jumpAt)).toBe(false);
-    expect(cleared(stage.text.replace(before, after), jumpAt)).toBe(true);
+    for (const [before] of answer.changes) {
+      expect(stage.text).toContain(before);
+    }
+    expect(cleared(stage.text, answer.bot), "書き換える前").toBe(false);
+    expect(cleared(apply(stage.text, answer.changes), answer.bot), "全部書き換えた").toBe(true);
+    // 2か所以上が要るステージは、1か所だけ書き換えても（答えの一例のうち1つを除いても）クリアできない。
+    if (answer.changes.length >= 2) {
+      answer.changes.forEach((_, skip) => {
+        const partial = answer.changes.filter((__, i) => i !== skip);
+        expect(cleared(apply(stage.text, partial), answer.bot), `${skip + 1}つ目を書き換えないと`).toBe(false);
+      });
+    }
   });
 }
 
