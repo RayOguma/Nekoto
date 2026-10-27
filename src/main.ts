@@ -6,11 +6,11 @@ import {
   CheckErrors,
   createGame,
   cssVariables,
-  DEFAULT_SETTINGS,
   type GameState,
   keyWordOf,
   type Point,
   parse,
+  readSettings,
   render,
   type Settings,
   STEP_SECONDS,
@@ -18,8 +18,8 @@ import {
   tokenize,
 } from "wokoto";
 import { createCodeEditor } from "./editor";
-import { handleSounds, imageOf, stopAllSounds } from "./media";
-import { chosenStage, MENU_TEXT, stageList, STAGES } from "./stages";
+import { handleSounds, imageOf, setVolume, stopAllSounds } from "./media";
+import { chosenStage, MENU_TEXT, SETTINGS_TEXT, stageList, STAGES } from "./stages";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
 const start = document.querySelector<HTMLButtonElement>("#start")!;
@@ -34,15 +34,77 @@ const menuButton = document.querySelector<HTMLButtonElement>("#menu")!;
 const nextButton = document.querySelector<HTMLButtonElement>("#next")!;
 const ctx = canvas.getContext("2d")!;
 
-// ---- 見た目（テーマ） ----
-// 色は、つなぎのテーマと同じ CSS の変数。設定の文ができたら、そこから決める。
+// ---- 設定（見た目と音の大きさ） ----
+// 設定の文（ゲーム/画面/設定.wokoto）を、つなぎの設定と同じく をこと で読む。色は、つなぎのテーマと同じ CSS の変数。
 
-function applyLook(settings: Settings) {
+const settingsDialog = document.querySelector<HTMLElement>("#settings")!;
+const settingsProblems = document.querySelector<HTMLUListElement>("#settings-problems")!;
+// 今の設定の文（設定の画面で書き換えたもの）。
+let settingsText = SETTINGS_TEXT;
+// 設定の画面を開いている間は、ゲームを止める。
+let settingsOpen = false;
+
+function applySettings(settings: Settings) {
   for (const [name, value] of Object.entries(cssVariables(settings))) {
     document.documentElement.style.setProperty(name, value);
   }
+  setVolume(settings.musicVolume / 100, settings.soundVolume / 100);
 }
-applyLook(DEFAULT_SETTINGS);
+
+// 設定の文を読んで効かせる。間違いがあれば、前の設定のまま理由を出す。
+function applySettingsText(text: string) {
+  try {
+    applySettings(readSettings(text));
+    settingsText = text;
+    settingsProblems.hidden = true;
+  } catch (error) {
+    const errors = error instanceof CheckErrors ? error.all : error instanceof CheckError ? [error] : [];
+    const lineOf = (at: number) => text.slice(0, at).split("\n").length;
+    settingsProblems.replaceChildren(
+      ...(errors.length > 0 ? errors.map((each) => `${lineOf(each.start)}行目：${each.message}`) : [String(error)]).map((line) => {
+        const li = document.createElement("li");
+        li.textContent = line;
+        return li;
+      }),
+    );
+    settingsProblems.hidden = false;
+  }
+}
+applySettingsText(settingsText);
+
+let settingsTimer: number | undefined;
+const settingsEditor = createCodeEditor(
+  document.querySelector<HTMLElement>("#settings-code")!,
+  () => {
+    window.clearTimeout(settingsTimer);
+    settingsTimer = window.setTimeout(function apply() {
+      if (settingsEditor.composing()) {
+        settingsTimer = window.setTimeout(apply, 300);
+        return;
+      }
+      applySettingsText(settingsEditor.text());
+    }, 300);
+  },
+  "設定",
+);
+
+function openSettings() {
+  settingsOpen = true;
+  settingsDialog.hidden = false;
+  settingsEditor.load(settingsText);
+}
+
+function closeSettings() {
+  // 打ちかけの書き換えも効かせてから閉じる。
+  window.clearTimeout(settingsTimer);
+  applySettingsText(settingsEditor.text());
+  settingsOpen = false;
+  settingsDialog.hidden = true;
+  canvas.focus();
+}
+
+document.querySelector("#close-settings")!.addEventListener("click", closeSettings);
+document.querySelector("#open-settings")!.addEventListener("click", openSettings);
 
 // ---- ゲームの画面の幅 ----
 // 高さは文で決めた高さのまま、見える横幅を窓に合わせて広げる（黒い余りを出さない）。世界より広くはしない。
@@ -172,7 +234,7 @@ function watchMenu(state: GameState) {
   }
   if (state.variables.get("設定を開く") === true) {
     state.variables.set("設定を開く", false);
-    // 設定の画面は、次に作る。
+    openSettings();
   }
 }
 
@@ -220,7 +282,7 @@ canvas.addEventListener("pointerdown", (event) => {
   pressedSinceStep.add(MOUSE_KEY);
 });
 window.addEventListener("pointerup", () => held.delete(MOUSE_KEY));
-const typingInCode = (event: Event) => event.target instanceof Element && event.target.closest("#code") !== null;
+const typingInCode = (event: Event) => event.target instanceof Element && event.target.closest("#code, #settings") !== null;
 
 window.addEventListener("keydown", (event) => {
   if (typingInCode(event)) {
@@ -270,7 +332,7 @@ function frame(now: number) {
     stored += (now - last) / 1000;
   }
   last = now;
-  if (game && started) {
+  if (game && started && !settingsOpen) {
     let steps = 0;
     while (stored >= STEP_SECONDS && steps < 5) {
       const input = { keys: [...new Set([...held, ...pressedSinceStep])], clicks, mouse };

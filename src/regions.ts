@@ -77,3 +77,19 @@ export function lockedSections(text: string): Section[] {
   }
   return sections;
 }
+
+// 設定の画面で変えられるところ：「〜 を ◯◯ に する。」の ◯◯（数やテーマの名前）。行ごとに1つ。
+// 位置は文字の位置（from〜to）。
+export function findValues(text: string): { from: number; to: number }[] {
+  const values: { from: number; to: number }[] = [];
+  let at = 0;
+  for (const line of text.split("\n")) {
+    const found = /^(?!\s*#).* を (\S+) に する。\s*$/.exec(line);
+    if (found) {
+      const from = at + found.index + found[0].lastIndexOf(` を ${found[1]} に する。`) + 3;
+      values.push({ from, to: from + found[1].length });
+    }
+    at += line.length + 1;
+  }
+  return values;
+}

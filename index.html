@@ -191,6 +191,60 @@
         color: #fff;
         font-size: 12.5px;
       }
+      /* 設定の画面（窓の上に重ねる）。 */
+      #settings {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 10;
+      }
+      #settings[hidden] {
+        display: none;
+      }
+      #settings .dialog {
+        display: flex;
+        flex-direction: column;
+        width: min(720px, 92vw);
+        height: min(520px, 86vh);
+        background: var(--ui-panel);
+        border: 1px solid var(--ui-border-strong);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      }
+      #settings header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 44px;
+        padding: 0 8px 0 18px;
+        background: var(--ui-panel-2);
+        border-bottom: 1px solid var(--ui-border);
+        font-weight: bold;
+        font-size: 16px;
+      }
+      #settings header .spacer {
+        flex: 1;
+      }
+      #settings-code {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+      }
+      #settings-problems {
+        margin: 0;
+        padding: 6px 18px;
+        list-style: none;
+        color: var(--ui-error);
+        background: var(--ui-panel-2);
+        border-top: 1px solid var(--ui-border);
+      }
+      #settings-problems[hidden] {
+        display: none;
+      }
       #status .spacer {
         flex: 1;
       }
@@ -213,6 +267,7 @@
         <div id="tabs">
           <div class="tab" id="tab"><span id="file-name"></span><span class="dot" title="書き換えている"></span></div>
           <div class="spacer"></div>
+          <button id="open-settings" class="tool" type="button" title="音の大きさやテーマを変える">⚙ せってい</button>
           <button id="menu" class="tool" type="button" title="タイトルとステージ選択に戻る">≡ メニュー</button>
           <button id="reset" class="tool" type="button" title="このステージの文を、はじめの形に戻す">↺ もとに戻す</button>
         </div>
@@ -225,6 +280,17 @@
           <span class="spacer"></span>
           <span>をこと</span>
         </div>
+      </div>
+    </div>
+    <div id="settings" hidden>
+      <div class="dialog">
+        <header>
+          <span>⚙ せってい</span>
+          <span class="spacer"></span>
+          <button id="close-settings" class="tool" type="button">◀ もどる</button>
+        </header>
+        <div id="settings-code"></div>
+        <ul id="settings-problems" hidden></ul>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

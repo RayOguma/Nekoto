@@ -1,7 +1,7 @@
 // ゲーム/ の をこと の文が、読めて動くか。ステージは、書き換える前はクリアできず、書き換えたらクリアできるか。
-import { check, createGame, type GameState, parse, step, tokenize } from "wokoto";
+import { check, createGame, type GameState, parse, readSettings, step, tokenize } from "wokoto";
 import { expect, test } from "vitest";
-import { STAGES } from "./stages";
+import { SETTINGS_TEXT, STAGES } from "./stages";
 
 const files = import.meta.glob<string>("../ゲーム/**/*.wokoto", { query: "?raw", import: "default", eager: true });
 const menu = files["../ゲーム/画面/メニュー.wokoto"];
@@ -10,7 +10,8 @@ function gameOf(source: string): GameState {
   return createGame(check(parse(tokenize(source), source)));
 }
 
-for (const [path, source] of Object.entries(files)) {
+// 設定の文はゲームではないので、下で別に確かめる。
+for (const [path, source] of Object.entries(files).filter(([path]) => !path.endsWith("/設定.wokoto"))) {
   test(`読めて動く：${path.replace("../ゲーム/", "")}`, () => {
     const game = gameOf(source);
     for (let i = 0; i < 120; i++) {
@@ -66,4 +67,11 @@ test("メニュー：はじめるを押すと「遊ぶ」が「つづき」に�
   step(game, { keys: [] });
   step(game, { keys: [], clicks: [{ x: 200, y: 450 - 150 - 210 + 20 }] });
   expect(game.variables.get("遊ぶ")).toBe("1. ジャンプ");
+});
+
+test("設定の文が読める。はじめの音楽の音量は小さい", () => {
+  const settings = readSettings(SETTINGS_TEXT);
+  expect(settings.theme).toBe("夜");
+  expect(settings.musicVolume).toBe(3);
+  expect(settings.soundVolume).toBe(80);
 });

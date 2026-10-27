@@ -44,3 +44,6 @@ export function chosenStage(choice: string, cleared: ReadonlySet<number>): numbe
   const index = stageList(cleared).indexOf(choice);
   return index === -1 ? null : index;
 }
+
+// 設定の文（はじめの形）。ゲーム/画面/設定.wokoto。
+export const SETTINGS_TEXT = screens["../ゲーム/画面/設定.wokoto"] ?? "";

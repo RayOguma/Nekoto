@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { findRegions, insideRegion, lockedSections } from "./regions";
+import { findRegions, findValues, insideRegion, lockedSections } from "./regions";
 
 const text = ["ねこ という 丸 を 作る。", "# ▼ 変えられる", "ねこ の 大きさ を 40 に する。", "# ▲ ここまで", "旗 という 三角 を 作る。"].join("\n");
 
@@ -52,4 +52,10 @@ test("鍵のまとまりは、見出しから空行の手前まで。変えら�
   const sections = lockedSections(text);
   expect(sections.map((each) => [each.title, each.lines])).toEqual([["世界", 2]]);
   expect(text.slice(sections[0].from, sections[0].to)).toBe("\n世界 の 大きさ を 横 2400 縦 450 に する。\nカメラ は ねこ を 追う。");
+});
+
+test("設定の文の値（を と に の間）だけを見つける。コメントの行は見ない", () => {
+  const text = "# 音量 を 3 に する。\nテーマ を 夜 に する。\n音楽 の 音量 を 30 に する。";
+  const values = findValues(text);
+  expect(values.map((each) => text.slice(each.from, each.to))).toEqual(["夜", "30"]);
 });

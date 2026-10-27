@@ -17,7 +17,7 @@ import {
 } from "@codemirror/view";
 import { codeFolding, foldEffect, foldGutter, foldService } from "@codemirror/language";
 import { colorRanges } from "wokoto";
-import { CLOSE_MARK, findRegions, insideRegion, lockedSections, OPEN_MARK } from "./regions";
+import { CLOSE_MARK, findRegions, findValues, insideRegion, lockedSections, OPEN_MARK } from "./regions";
 
 // 変えられるところの外を書き換えようとしたら、取り消す。
 const lockFilter = EditorState.transactionFilter.of((tr) => {
@@ -197,6 +197,56 @@ const foldMarks = foldGutter({
   },
 });
 
+// ---- 値だけ変えられる（設定の画面） ----
+// 「〜 を ◯◯ に する。」の ◯◯ だけを打てる。値の範囲は書き換えに合わせて動かす（全部消しても、その場所に打ち直せる）。
+
+type Span = { from: number; to: number };
+
+const valueSpans = StateField.define<Span[]>({
+  create: (state) => findValues(state.doc.toString()),
+  update(spans, tr) {
+    if (!tr.docChanged) {
+      return spans;
+    }
+    // 前の端に打った字も、後ろの端に打った字も、その値の中に入れる。
+    return spans.map((span) => ({ from: tr.changes.mapPos(span.from, -1), to: tr.changes.mapPos(span.to, 1) }));
+  },
+});
+
+const valueFilter = EditorState.transactionFilter.of((tr) => {
+  if (!tr.docChanged) {
+    return tr;
+  }
+  const spans = tr.startState.field(valueSpans);
+  let ok = true;
+  tr.changes.iterChanges((fromA, toA, _fromB, _toB, inserted) => {
+    // 値の中だけ。改行は入れられない（1行に1つの決まりが崩れるので）。
+    if (!spans.some((span) => span.from <= fromA && toA <= span.to) || inserted.toString().includes("\n")) {
+      ok = false;
+    }
+  });
+  return ok ? tr : [];
+});
+
+const valueMarks = EditorView.decorations.compute([valueSpans], (state) =>
+  Decoration.set(
+    state.field(valueSpans).filter((span) => span.from < span.to).map((span) => Decoration.mark({ class: "nk-value" }).range(span.from, span.to)),
+    true,
+  ),
+);
+
+const valueTheme = EditorView.theme({
+  ".nk-value": {
+    padding: "1px 6px",
+    borderRadius: "6px",
+    backgroundColor: "color-mix(in srgb, var(--ui-highlight) 18%, transparent)",
+    border: "1px solid var(--ui-highlight)",
+  },
+});
+
+// 文を書く部分の種類。ステージ（印で囲んだ行を変えられる）か、設定（値だけ変えられる）。
+export type LockMode = "ステージ" | "設定";
+
 export type CodeEditor = {
   // 文を入れ替える（鍵を気にしない）。
   load(text: string): void;
@@ -208,20 +258,17 @@ export type CodeEditor = {
 };
 
 // onChange は、遊ぶ人が文を書き換えたときに呼ぶ。
-export function createCodeEditor(parent: HTMLElement, onChange: () => void): CodeEditor {
+export function createCodeEditor(parent: HTMLElement, onChange: () => void, mode: LockMode = "ステージ"): CodeEditor {
+  const locks =
+    mode === "ステージ" ? [foldMarks, penGutter, sectionFolds, folding, lockFilter, lineField] : [valueSpans, valueFilter, valueMarks, valueTheme];
   const extensions = [
     lineNumbers(),
-    foldMarks,
-    penGutter,
-    sectionFolds,
-    folding,
+    ...locks,
     highlightActiveLine(),
     highlightActiveLineGutter(),
     drawSelection(),
     history(),
     keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
-    lockFilter,
-    lineField,
     colorField,
     theme,
     EditorView.updateListener.of((update) => {
@@ -237,6 +284,9 @@ export function createCodeEditor(parent: HTMLElement, onChange: () => void): Cod
       // 状態ごと作り直す（前のステージの「元に戻す」が残らないように）。作り直しは書き換えではないので、onChange は呼ばない。
       view.setState(EditorState.create({ doc: text, extensions }));
       recolor(view);
+      if (mode !== "ステージ") {
+        return;
+      }
       // 鍵のまとまりを畳み、最初の変えられる行へ移る（下までスクロールしなくて済むように）。
       const first = findRegions(text)[0];
       view.dispatch({
