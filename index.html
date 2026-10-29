@@ -37,11 +37,17 @@
         justify-content: center;
         background: #000;
       }
+      /* 窓が縦長ぎみでも、ゲームの横幅が 800 より狭くならないよう、高さを「窓の幅 × 450 / 800」までにする（狭いと、札やボタンが左右で切れる）。 */
       #game {
         display: block;
         height: 55vh;
+        max-height: calc(100vw * 450 / 800);
       }
-      /* メニュー（タイトルとステージ選択）のときは、ゲームを窓いっぱいにして、エディタを隠す。 */
+      /* メニュー（タイトルとステージ選択）のときは、ゲームを窓いっぱいにして、エディタを隠す。高さが余ったら、上下の真ん中に置く。 */
+      body.menu #stage {
+        height: 100vh;
+        align-items: center;
+      }
       body.menu #game {
         height: 100vh;
       }
