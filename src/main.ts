@@ -219,8 +219,12 @@ let mode: "メニュー" | "ステージ" = "メニュー";
 const clearedStages = new Set<number>(STAGES.flatMap((stage, index) => (save.cleared.includes(stage.file) ? [index] : [])));
 
 // 間違いを、下の問題の一覧と帯に出す。行を押すと、その行へ行く。読み取りの間違い（字下げ など）も、行の番号つきで出す。
-function showProblem(text: string, error: unknown) {
+// lead は、一覧の頭に出す説明（遊んでいる途中で止まったとき など）。
+function showProblem(text: string, error: unknown, lead?: string) {
   problems.replaceChildren();
+  if (lead) {
+    problems.append(Object.assign(document.createElement("li"), { textContent: lead }));
+  }
   const items = problemsOf(error);
   for (const item of items) {
     const li = document.createElement("li");
@@ -604,10 +608,27 @@ function frame(now: number) {
           handleSounds(game.sounds.splice(0));
         }
       } catch (error) {
-        // 遊んでいる途中の間違い（0 で割った など）。このゲームは止めて、知らせる。
-        game = null;
+        // 遊んでいる途中の間違い（0 で割った、ねこが世界の外へ出て消えた など）。
+        // 画面が止まったままにならないよう、同じ文ではじめからやり直して、理由を下に出す。
+        // やり直してすぐ（1秒もたたずに）また間違えるときは、何度やっても同じなので、止めて知らせる。
+        const text = gameText;
         stopAllSounds();
-        showProblem(gameText, error);
+        const restarted = game.time >= 1;
+        if (!restarted) {
+          game = null;
+        } else if (mode === "メニュー") {
+          openMenu();
+        } else {
+          build(text);
+        }
+        // 大きすぎる数で、ねこなどが世界の外へ飛び出して消えたときは、何が起きたかを添える。
+        const vanished = error instanceof Error && error.message.includes("今は画面にありません");
+        showProblem(
+          text,
+          error,
+          (restarted ? "遊んでいる途中で止まったので、はじめからやり直しました。" : "遊び始めてすぐ止まってしまいます。") +
+            (vanished ? "ものが世界の外へ飛び出して、消えてしまったようです。数を小さくしてみよう。" : ""),
+        );
         break;
       }
       if (mode === "メニュー") {

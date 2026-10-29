@@ -127,6 +127,27 @@ for (const stage of STAGES.slice(10)) {
   });
 }
 
+// 大きすぎる値に書き換えても、ねこが世界の外へ出て消えず、ゲームが止まらない（左右の外に出たら、はじめの場所に戻る）。
+const HUGE: [string, RegExp, string][] = [
+  ["ジャンプがとても高い", /ねこ を (-?\d+) だけ (\d+)回 まで ジャンプ させる。/, "ねこ を 10000 だけ 99回 まで ジャンプ させる。"],
+  ["右がとても速い", /右キー を 押している なら、ねこ を (右|左) に \d+ だけ 動かす。/, "右キー を 押している なら、ねこ を 右 に 10000 だけ 動かす。"],
+  ["左がとても速い", /左キー を 押している なら、ねこ を (右|左) に \d+ だけ 動かす。/, "左キー を 押している なら、ねこ を 左 に 10000 だけ 動かす。"],
+];
+for (const stage of STAGES) {
+  test(`大きすぎる値でも止まらない：${stage.file}`, () => {
+    for (const [what, before, after] of HUGE) {
+      const text = stage.text.replace(before, after);
+      expect(text, what).not.toBe(stage.text);
+      const game = gameOf(text);
+      for (let i = 0; i < 400; i++) {
+        const keys = [i < 250 ? "右キー" : "左キー"];
+        if (i % 16 < 2) keys.push("スペース");
+        expect(() => step(game, { keys }), `${what}（${i}コマ目）`).not.toThrow();
+      }
+    }
+  });
+}
+
 test("メニュー：はじめるを押すと「遊ぶ」が 0（つづき）に、ステージの札を押すとその番号になる", () => {
   const game = gameOf(menu);
   game.variables.set("ステージ名", ["ジャンプ", "向き", "速さ"]);
@@ -214,6 +235,14 @@ test("メニュー：ひらけたページがあると ▶ が出て、押すと
   step(game, { keys: [] });
   expect(labels()).toEqual(["11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]);
   expect(game.variables.get("ページ")).toBe(2);
+  // ◀ を押すと、前の10枚に戻る（前へボタン が 次へボタン の仲間だったころは、両方が動いて戻れなかった）。
+  const back = game.things.find((thing) => thing.kinds.includes("前へボタン"))!;
+  expect(back.x).toBeGreaterThan(0);
+  expect(back.x).toBeLessThan(800);
+  step(game, { keys: [], clicks: [{ x: back.x + 10, y: back.y + 10 }] });
+  step(game, { keys: [] });
+  expect(labels()).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
+  expect(game.variables.get("ページ")).toBe(1);
 });
 
 test("メニュー：タイトルとステージ選択を行き来しても、飾りや矢印が消えない", () => {
@@ -224,7 +253,7 @@ test("メニュー：タイトルとステージ選択を行き来しても、�
   game.variables.set("遊べる", names.map((_, i) => i === 0));
   game.variables.set("ページ数", 2);
   game.variables.set("ひらけたページ", 1);
-  // その種類だけを数える（仲間は数えない。前へボタン は 次へボタン の仲間）。
+  // その種類だけを数える（仲間は数えない）。
   const count = (kind: string) => game.things.filter((thing) => thing.kinds[0] === kind).length;
   step(game, { keys: [] });
   // ステージ選択へ（えらぶボタン）。
