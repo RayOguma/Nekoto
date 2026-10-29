@@ -163,13 +163,13 @@ test("メニュー：はじめるを押すと「遊ぶ」が 0（つづき）に
   // えらぶボタン（縦 110、高さ 40）を押して、ステージ選択へ。
   step(game, { keys: [], clicks: [{ x: 400, y: 450 - 110 - 20 }] });
   step(game, { keys: [] });
-  // 札は 横 (400 - 256 + 列 * 108) 縦 314、大きさ 80。クリアした1枚目にだけ、右上の角に肉球が付く。2枚目を押す。
+  // 札は 横 (400 - 256 + 列 * 108) 縦 294、大きさ 80。クリアした1枚目にだけ、右上の角に肉球が付く。2枚目を押す。
   const cards = game.things.filter((thing) => thing.kinds.includes("札"));
   expect(cards).toHaveLength(3);
   const paws = game.things.filter((thing) => thing.kinds.includes("肉球"));
   expect(paws).toHaveLength(1);
   expect(paws[0].x).toBe(cards[0].x + 60);
-  step(game, { keys: [], clicks: [{ x: 144 + 108 + 40, y: 450 - 314 - 40 }] });
+  step(game, { keys: [], clicks: [{ x: 144 + 108 + 40, y: 450 - 294 - 40 }] });
   expect(game.variables.get("遊ぶ")).toBe(2);
 });
 
@@ -215,7 +215,7 @@ test("メニュー：まだ遊べない札には南京錠が出て、押して�
   step(game, { keys: [] });
   expect(game.things.filter((thing) => thing.kinds.includes("錠"))).toHaveLength(1);
   // 3枚目（横 144 + 216）を押す。
-  step(game, { keys: [], clicks: [{ x: 144 + 216 + 40, y: 450 - 314 - 40 }] });
+  step(game, { keys: [], clicks: [{ x: 144 + 216 + 40, y: 450 - 294 - 40 }] });
   expect(game.variables.get("遊ぶ")).toBe(-1);
 });
 
@@ -267,8 +267,8 @@ test("メニュー：タイトルとステージ選択を行き来しても、�
   // ステージ選択では、飾りは画面の外。
   const cat = game.things.find((thing) => thing.kinds.includes("ねこ"))!;
   expect(cat.x).toBeGreaterThan(800);
-  // もどる（横 300 縦 130、高さ 40）で、タイトルへ。
-  step(game, { keys: [], clicks: [{ x: 400, y: 450 - 130 - 20 }] });
+  // もどる（横 300 縦 110、高さ 40）で、タイトルへ。
+  step(game, { keys: [], clicks: [{ x: 400, y: 450 - 110 - 20 }] });
   for (let i = 0; i < 5; i++) step(game, { keys: [] });
   expect(count("ねこ")).toBe(1);
   expect(count("旗")).toBe(1);
