@@ -229,7 +229,7 @@ test("メニュー：ひらけたページがあると ▶ が出て、押すと
   step(game, { keys: [] });
   step(game, { keys: [], clicks: [{ x: 400, y: 450 - 90 - 30 }] });
   step(game, { keys: [] });
-  const labels = () => game.things.filter((thing) => thing.kinds.includes("札")).map((thing) => thing.label);
+  const labels = () => game.things.filter((thing) => thing.kinds.includes("札番号")).map((thing) => thing.label);
   expect(labels()).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
   const next = game.things.find((thing) => thing.kinds.includes("次へボタン"))!;
   expect(next.x).toBeGreaterThan(0);
