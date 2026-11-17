@@ -2,6 +2,8 @@
 
 import {
   check,
+  CheckError,
+  CheckErrors,
   createGame,
   cssVariables,
   type GameState,
@@ -17,6 +19,7 @@ import {
 } from "wokoto";
 import { createCodeEditor } from "./editor";
 import { lineOf, problemsOf } from "./problems";
+import { forbiddenNames } from "./regions";
 import { handleSounds, imageOf, setVolume, stopAllSounds } from "./media";
 import { clearSave, emptySave, loadSave, rememberText, stageText, writeSave } from "./save";
 import { chosenStage, MENU_TEXT, openedPages, PAGE_SIZE, pageCount, playable, SETTINGS_TEXT, STAGES } from "./stages";
@@ -253,7 +256,14 @@ function clearProblems() {
 // 文からゲームを作り直す。間違いがあれば、前のゲームを動かしたまま理由を出す。作れたら true。
 function build(text: string): boolean {
   try {
-    const next = createGame(check(parse(tokenize(text), text)));
+    const tokens = tokenize(text);
+    const forbidden = forbiddenNames(text, tokens).map(
+      (word) => new CheckError(`「${word.name}」は、変えられるところには書けません。ねこを旗まで連れていこう。`, word.start, word.end),
+    );
+    if (forbidden.length > 0) {
+      throw forbidden.length === 1 ? forbidden[0] : new CheckErrors(forbidden);
+    }
+    const next = createGame(check(parse(tokens, text)));
     game = next;
     gameText = text;
     isCleared = false;

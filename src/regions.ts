@@ -93,3 +93,16 @@ export function findValues(text: string): { from: number; to: number }[] {
   }
   return values;
 }
+
+// 変えられるところに書けない名前。クリアは、旗に触れたときにだけ ねこと の鍵の文が入れる。
+// 変えられるところで「クリア を 真 に する。」と書けば、旗まで行かなくてもクリアできてしまうため。
+// 文字の中（「クリア！」）やコメントは、名前ではないので書いてよい。
+export const FORBIDDEN_NAMES = ["クリア"];
+
+// 変えられるところに書いた、書けない名前を探す。tokens は をこと の部品（tokenize の結果）。
+export function forbiddenNames(text: string, tokens: { kind: string; text: string; start: number; end: number }[]): { name: string; start: number; end: number }[] {
+  const regions = findRegions(text);
+  return tokens
+    .filter((token) => token.kind === "語" && FORBIDDEN_NAMES.includes(token.text) && insideRegion(regions, token.start, token.end))
+    .map((token) => ({ name: token.text, start: token.start, end: token.end }));
+}

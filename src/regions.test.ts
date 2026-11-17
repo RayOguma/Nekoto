@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
-import { findRegions, findValues, insideRegion, lockedSections } from "./regions";
+import { tokenize } from "wokoto";
+import { findRegions, findValues, forbiddenNames, insideRegion, lockedSections } from "./regions";
+import { STAGES } from "./stages";
 
 const text = ["ねこ という 丸 を 作る。", "# ▼ 変えられる", "ねこ の 大きさ を 40 に する。", "# ▲ ここまで", "旗 という 三角 を 作る。"].join("\n");
 
@@ -58,4 +60,25 @@ test("設定の文の値（を と に の間）だけを見つける。コメ�
   const text = "# 音量 を 3 に する。\nテーマ を 夜 に する。\n音楽 の 音量 を 30 に する。";
   const values = findValues(text);
   expect(values.map((each) => text.slice(each.from, each.to))).toEqual(["夜", "30"]);
+});
+
+test("変えられるところに「クリア」と書くと見つかる。鍵の行・文字の中・コメントは見つけない", () => {
+  const cheat = [
+    "クリア を 偽 に する。",
+    "# ▼ 変えられる",
+    "# クリア はコメント",
+    "「クリア！」 を 書く。",
+    "ねこ が 旗 に 触れたら、クリア を 真 に する。",
+    "# ▲ ここまで",
+  ].join("\n");
+  const found = forbiddenNames(cheat, tokenize(cheat));
+  expect(found).toHaveLength(1);
+  expect(cheat.slice(found[0].start, found[0].end)).toBe("クリア");
+  expect(found[0].start).toBeGreaterThan(cheat.indexOf("旗"));
+});
+
+test("どのステージも、書き換える前は「クリア」が変えられるところにない", () => {
+  for (const stage of STAGES) {
+    expect(forbiddenNames(stage.text, tokenize(stage.text)), stage.file).toEqual([]);
+  }
 });
