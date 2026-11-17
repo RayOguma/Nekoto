@@ -95,6 +95,8 @@ const answers: Record<string, { changes: [string, string][]; bot?: Bot; timeout?
     timeout: 60000,
     changes: [["400 だけ", "200 だけ"], ["ねこ の 高さ を 56", "ねこ の 高さ を 40"], MICE, ["5秒 ごと", "20秒 ごと"]],
   },
+  // ---- 新しい言葉のステージ ----
+  "21_階段の動詞.wokoto": { changes: [["段 > 1", "段 > 3"], ["200 から 階段を作る。", "1000 から 階段を作る。"]] },
 };
 
 const apply = (text: string, changes: [string, string][]) => changes.reduce((done, [before, after]) => done.replace(before, after), text);

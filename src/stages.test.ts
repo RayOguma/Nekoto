@@ -36,10 +36,10 @@ test("どのステージにもヒントが3つある", () => {
 });
 
 test("ページ：1〜10を全部クリアすると、2ページ目がひらく", () => {
-  expect(pageCount()).toBe(2);
+  expect(pageCount()).toBe(3);
   const some = new Set([0, 1, 2]);
   expect(openedPages(some)).toBe(1);
-  expect(openedPages(some, true)).toBe(2);
+  expect(openedPages(some, true)).toBe(3);
   const first = new Set(Array.from({ length: 10 }, (_, i) => i));
   expect(openedPages(first)).toBe(2);
 });
